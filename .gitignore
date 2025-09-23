@@ -1,0 +1,103 @@
+# Build directories
+build/
+build-*/
+out/
+cmake-build-*/
+
+# Conan generated files
+conaninfo.txt
+conanbuildinfo.*
+conanfile.txt.bak
+conandata.yml
+test_package/build/
+conanbuild.sh
+conanrun.sh
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+Testing/
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps/
+
+# Generated executables and libraries
+*.exe
+*.out
+*.app
+*.dll
+*.so
+*.dylib
+*.a
+*.lib
+
+# Python bindings
+*.pyd
+*.cpython-*.so
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+.eggs/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.vs/
+*.vcxproj.user
+*.vcxproj.filters
+
+# Temporary and backup files
+*.tmp
+*.temp
+*.bak
+*.orig
+*.log
+
+# Test results and coverage
+*.gcda
+*.gcno
+*.gcov
+lcov.info
+coverage/
+*.coverage
+
+# Documentation builds
+docs/_build/
+docs/html/
+docs/latex/
+
+# Package managers
+node_modules/
+.npm/
+.yarn/
+
+# Operating system files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Profiling and debugging
+*.prof
+*.gprof
+perf.data*
+callgrind.out.*
+massif.out.*
+
+# Custom build outputs
+*.benchmark
+*.timing
+*.memory

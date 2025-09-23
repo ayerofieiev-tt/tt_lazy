@@ -54,6 +54,75 @@ TT Lazy is a **CPU math functions backend** with a **lazy tensor evaluation fram
 - **tt_math_lib**: CPU math functions for actual computation (immediate evaluation)
 - **tt_lazy_tape**: Tape-based execution system with operation handlers (lowering/bridge layer)
 
+## 🚀 Quick Start & Usage
+
+### C++ API - Automatic Evaluation
+
+```cpp
+#include "Tensor.hpp"
+#include "operations.hpp"
+
+// Create tensors
+Tensor a({2, 3});
+Tensor b({3, 4});
+a.fill(1.0f);
+b.fill(2.0f);
+
+// Build lazy computation graph (no computation yet!)
+Tensor c = matmul(a, b);      // Lazy operation
+Tensor d = relu(c);           // Lazy operation  
+Tensor e = reduce_sum(d);     // Lazy operation
+
+// Automatic evaluation when accessing data
+float* result = e.data_ptr(); // Graph evaluated automatically!
+std::vector<float> data = e.to_vector(); // Also triggers evaluation
+```
+
+### Advanced Usage with Graph Optimization
+
+```cpp
+// Multiple element-wise operations that get fused
+Tensor x({1000, 1000});
+x.fill(1.0f);
+
+Tensor y = relu(x);                   // Element-wise
+Tensor z = add(y, y);                 // Element-wise  
+Tensor w = multiply(z, z);            // Element-wise
+
+// TT Lazy optimizes: relu + add + multiply → single fused kernel
+float* optimized_result = w.data_ptr(); // Fused execution!
+```
+
+### Python API
+
+```python
+import tt_lazy
+import numpy as np
+
+# Create tensors
+a = tt_lazy.tensor([2, 3], data=np.ones((2, 3), dtype=np.float32))
+b = tt_lazy.tensor([3, 4], data=np.ones((3, 4), dtype=np.float32))
+
+# Build lazy computation graph
+c = tt_lazy.matmul(a, b)        # No computation yet
+d = tt_lazy.relu(c)             # Still no computation
+e = tt_lazy.reduce_sum(d)       # Still lazy
+
+# Automatic evaluation when converting to numpy
+result_np = e.to_numpy()        # Graph evaluated automatically!
+```
+
+### Graph Visualization & Debugging
+
+```cpp
+// Print the computation graph structure
+Tensor result = some_computation();
+result.print_graph(std::cout);
+
+// Manual evaluation when needed
+result.eval(); // Explicit evaluation (optional)
+```
+
 ## 📦 Dependencies
 
 - **C++17** or later
@@ -171,127 +240,6 @@ cd tests/python
 python3 run_tests.py
 ```
 
-## 📚 Usage
-
-### C++ API
-
-#### Basic Tensor Operations
-
-```cpp
-#include "Tensor.hpp"
-#include "Context.hpp"
-
-// Create a context
-Context ctx;
-
-// Create materialized tensors
-Tensor a({2, 3});
-Tensor b({3, 4});
-a.fill(1.0f);
-b.fill(2.0f);
-
-// Perform matrix multiplication (lazy)
-Tensor c = matmul(a, b);
-
-// Access data (automatically triggers evaluation)
-float* data = c.data_ptr();
-```
-
-#### Lazy Evaluation with Automatic Execution
-
-```cpp
-// Create lazy computation graph
-Tensor x({10, 10});
-x.fill(1.0f);
-
-Tensor y = relu(x);           // Lazy operation - no computation yet
-Tensor z = matmul(y, y);      // Lazy operation - no computation yet  
-Tensor w = reduce_sum(z);     // Lazy operation - no computation yet
-
-// Automatic evaluation when data is accessed
-float* result = w.data_ptr(); // Graph is evaluated automatically!
-// OR
-std::vector<float> data = w.to_vector(); // Also triggers evaluation
-```
-
-#### Graph Visualization
-
-```cpp
-// Print the computation graph
-Tensor result = some_computation();
-result.print_graph(std::cout);
-```
-
-#### Graph Optimization Examples
-
-**Data Movement Elimination:**
-```cpp
-// Without optimization: multiple transpose operations
-Tensor x({100, 200});
-Tensor y = transpose(x, {1, 0});      // Transpose 1
-Tensor z = transpose(y, {1, 0});      // Transpose 2 (cancels out)
-Tensor w = relu(z);                   // Final operation
-
-// TT Lazy optimization: 
-// - Recognizes transpose(transpose(x)) = x
-// - Eliminates redundant data movement
-// - Directly applies relu(x)
-float* result = w.data_ptr(); // Only ONE operation executed!
-```
-
-**Operation Fusion:**
-```cpp
-// Multiple element-wise operations that can be fused
-Tensor x({1000, 1000});
-x.fill(1.0f);
-
-Tensor y = relu(x);                   // Element-wise
-Tensor z = add(y, y);                 // Element-wise  
-Tensor w = multiply(z, z);            // Element-wise
-
-// TT Lazy fusion optimization:
-// - Combines relu + add + multiply into single kernel
-// - Single pass over data instead of three passes
-// - Better cache locality and performance
-float* result = w.data_ptr(); // Fused execution!
-```
-
-**Memory Optimization:**
-```cpp
-// Large intermediate tensors
-Tensor large_tensor({1000, 1000, 100});
-Tensor intermediate1 = matmul(large_tensor, weights1);  // Large intermediate
-Tensor intermediate2 = relu(intermediate1);             // Large intermediate  
-Tensor final_result = reduce_sum(intermediate2, {2});   // Small final result
-
-// TT Lazy optimization:
-// - Dead code elimination removes unused intermediates
-// - Memory reuse for temporary results
-// - Streaming computation for large tensors
-float sum = final_result.data_ptr()[0]; // Optimized execution!
-```
-
-### Python API
-
-```python
-import tt_lazy
-import numpy as np
-
-# Create tensors
-a = tt_lazy.tensor([2, 3], data=np.ones((2, 3), dtype=np.float32))
-b = tt_lazy.tensor([3, 4], data=np.ones((3, 4), dtype=np.float32))
-
-# Perform operations (lazy)
-c = tt_lazy.matmul(a, b)        # No computation yet
-d = tt_lazy.relu(c)             # Still no computation
-e = tt_lazy.reduce_sum(d)       # Still lazy
-
-# Automatic evaluation when converting to numpy
-result_np = e.to_numpy()        # Graph evaluated automatically!
-
-# OR access data directly
-data_ptr = e.data_ptr()         # Also triggers evaluation
-```
 
 ## 🔧 Operations
 
