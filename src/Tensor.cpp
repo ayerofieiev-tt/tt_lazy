@@ -12,13 +12,13 @@
 Tensor::Tensor() 
     : state_(State::LAZY), producer_node_(0), output_index_(0), rank_(0), 
       shape_{}, data_(nullptr), numel_(0), is_constant_(false), constant_data_(nullptr),
-      materialization_in_progress_(false) {}
+      evaluation_in_progress_(false) {}
 
 // Create lazy tensor from node output
 Tensor::Tensor(NodeId producer, uint16_t output_idx, std::initializer_list<uint32_t> shape) 
     : state_(State::LAZY), producer_node_(producer), output_index_(output_idx), 
       rank_(static_cast<uint16_t>(shape.size())), data_(nullptr), numel_(0),
-      is_constant_(false), constant_data_(nullptr), materialization_in_progress_(false) {
+      is_constant_(false), constant_data_(nullptr), evaluation_in_progress_(false) {
     assert(rank_ <= 4);
     std::copy(shape.begin(), shape.end(), shape_);
     std::fill(shape_ + rank_, shape_ + 4, 1);
@@ -29,7 +29,7 @@ Tensor::Tensor(NodeId producer, uint16_t output_idx, std::initializer_list<uint3
 Tensor::Tensor(std::initializer_list<uint32_t> shape)
     : state_(State::MATERIALIZED), producer_node_(0), output_index_(0),
       rank_(static_cast<uint16_t>(shape.size())), is_constant_(false), constant_data_(nullptr),
-      materialization_in_progress_(false) {
+      evaluation_in_progress_(false) {
     assert(rank_ <= 4);
     std::copy(shape.begin(), shape.end(), shape_);
     std::fill(shape_ + rank_, shape_ + 4, 1);
@@ -40,7 +40,7 @@ Tensor::Tensor(std::initializer_list<uint32_t> shape)
 Tensor::Tensor(const std::vector<uint32_t>& shape)
     : state_(State::MATERIALIZED), producer_node_(0), output_index_(0),
       rank_(static_cast<uint16_t>(shape.size())), is_constant_(false), constant_data_(nullptr),
-      materialization_in_progress_(false) {
+      evaluation_in_progress_(false) {
     assert(rank_ <= 4);
     std::copy(shape.begin(), shape.end(), shape_);
     std::fill(shape_ + rank_, shape_ + 4, 1);
@@ -51,7 +51,7 @@ Tensor::Tensor(const std::vector<uint32_t>& shape)
 Tensor::Tensor(const std::vector<uint32_t>& shape, const std::vector<float>& data)
     : state_(State::MATERIALIZED), producer_node_(0), output_index_(0),
       rank_(static_cast<uint16_t>(shape.size())), is_constant_(false), constant_data_(nullptr),
-      materialization_in_progress_(false) {
+      evaluation_in_progress_(false) {
     assert(rank_ <= 4);
     std::copy(shape.begin(), shape.end(), shape_);
     std::fill(shape_ + rank_, shape_ + 4, 1);
@@ -66,7 +66,7 @@ Tensor::Tensor(const std::vector<uint32_t>& shape, const std::vector<float>& dat
 Tensor::Tensor(void* data, std::initializer_list<uint32_t> shape) 
     : state_(State::MATERIALIZED), producer_node_(0), output_index_(0), 
       rank_(static_cast<uint16_t>(shape.size())), data_(nullptr), numel_(0),
-      is_constant_(true), constant_data_(data), materialization_in_progress_(false) {
+      is_constant_(true), constant_data_(data), evaluation_in_progress_(false) {
     assert(rank_ <= 4);
     std::copy(shape.begin(), shape.end(), shape_);
     std::fill(shape_ + rank_, shape_ + 4, 1);
@@ -78,7 +78,7 @@ Tensor::Tensor(const Tensor& other)
     : state_(other.state_), producer_node_(other.producer_node_), 
       output_index_(other.output_index_), rank_(other.rank_), 
       numel_(other.numel_), is_constant_(other.is_constant_), 
-      constant_data_(other.constant_data_), materialization_in_progress_(false) {
+      constant_data_(other.constant_data_), evaluation_in_progress_(false) {
     std::copy(other.shape_, other.shape_ + 4, shape_);
     copy_from_other(other);
 }
@@ -88,7 +88,7 @@ Tensor::Tensor(Tensor&& other) noexcept
     : state_(other.state_), producer_node_(other.producer_node_),
       output_index_(other.output_index_), rank_(other.rank_),
       numel_(other.numel_), is_constant_(other.is_constant_),
-      constant_data_(other.constant_data_), materialization_in_progress_(false) {
+      constant_data_(other.constant_data_), evaluation_in_progress_(false) {
     std::copy(other.shape_, other.shape_ + 4, shape_);
     move_from_other(std::move(other));
 }
@@ -170,7 +170,7 @@ bool Tensor::is_scalar() const {
 // Data access
 float* Tensor::data_ptr() {
     if (state_ == State::LAZY) {
-        materialize();
+        eval();
     }
     
     if (is_constant_) {
@@ -182,7 +182,7 @@ float* Tensor::data_ptr() {
 
 const float* Tensor::const_data_ptr() const {
     if (state_ == State::LAZY) {
-        const_cast<Tensor*>(this)->materialize();
+        const_cast<Tensor*>(this)->eval();
     }
     
     if (is_constant_) {
@@ -203,20 +203,13 @@ std::vector<float> Tensor::to_vector() const {
     return vec;
 }
 
-// Materialization methods
-void Tensor::materialize() {
+// Evaluation methods
+void Tensor::eval() {
     if (state_ == State::MATERIALIZED) {
         return;
     }
     
-    materialize_impl();
-}
-
-
-void Tensor::force_materialization() {
-    if (state_ == State::LAZY) {
-        materialize();
-    }
+    eval_impl();
 }
 
 // Graph visualization methods
@@ -337,7 +330,7 @@ void Tensor::print_graph(std::ostream& os, int indent) const {
 // Utility methods
 void Tensor::fill(float value) {
     if (state_ == State::LAZY) {
-        materialize();
+        eval();
     }
     
     float* data = data_ptr();
@@ -446,43 +439,43 @@ size_t Tensor::compute_numel() const {
     return total;
 }
 
-void Tensor::materialize_impl() const {
+void Tensor::eval_impl() const {
     if (state_ == State::MATERIALIZED) {
         return;
     }
     
-    // Check if materialization is already in progress (prevent infinite recursion)
-    if (materialization_in_progress_.load()) {
+    // Check if evaluation is already in progress (prevent infinite recursion)
+    if (evaluation_in_progress_.load()) {
         return;
     }
     
-    materialization_in_progress_.store(true);
+    evaluation_in_progress_.store(true);
     
     try {
-        // Use the evaluation manager to materialize this tensor
+        // Use the evaluation manager to evaluate this tensor
         auto& eval_manager = tt_lazy::get_evaluation_manager();
-        auto materialized = eval_manager.evaluate(*this);
+        auto evaluated = eval_manager.evaluate(*this);
         
-        if (materialized) {
-            // Copy the materialized data to this tensor
+        if (evaluated) {
+            // Copy the evaluated data to this tensor
             const_cast<Tensor*>(this)->state_ = State::MATERIALIZED;
             const_cast<Tensor*>(this)->allocate_data();
             
-            const float* src_data = materialized->const_data_ptr();
+            const float* src_data = evaluated->const_data_ptr();
             float* dst_data = const_cast<Tensor*>(this)->data_ptr();
             if (src_data && dst_data) {
                 std::memcpy(dst_data, src_data, numel_ * sizeof(float));
             }
         } else {
-            throw std::runtime_error("Failed to materialize tensor");
+            throw std::runtime_error("Failed to evaluate tensor");
         }
     } catch (...) {
-        // Handle materialization failure
-        materialization_in_progress_.store(false);
+        // Handle evaluation failure
+        evaluation_in_progress_.store(false);
         throw;
     }
     
-    materialization_in_progress_.store(false);
+    evaluation_in_progress_.store(false);
 }
 
 void Tensor::copy_from_other(const Tensor& other) {

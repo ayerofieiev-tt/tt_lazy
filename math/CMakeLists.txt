@@ -25,7 +25,7 @@ target_compile_features(tt_math_lib PUBLIC cxx_std_17)
 
 # Create test executable
 add_executable(test_math_ops test_math_ops.cpp)
-target_link_libraries(test_math_ops tt_math_lib)
+target_link_libraries(test_math_ops tt_math_lib tt_lazy_tape)
 
 # Enable testing
 enable_testing()

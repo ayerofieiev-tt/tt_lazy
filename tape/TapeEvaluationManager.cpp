@@ -14,12 +14,12 @@ TapeEvaluationManager::TapeEvaluationManager() {
 }
 
 std::shared_ptr<Tensor> TapeEvaluationManager::evaluate(const Tensor& tensor) {
-    if (tensor.is_materialized()) {
+    if (tensor.is_evaluated()) {
         stats_.cache_hits++;
         auto result = std::make_shared<Tensor>(tensor);
         // Ensure the copy is also materialized
-        if (!result->is_materialized()) {
-            result->materialize();
+        if (!result->is_evaluated()) {
+            result->eval();
         }
         return result;
     }
@@ -36,10 +36,10 @@ std::shared_ptr<Tensor> TapeEvaluationManager::evaluate(const Tensor& tensor) {
 
 void TapeEvaluationManager::clear_cache() {
     evaluation_cache_.clear();
-    stats_ = EvaluationStats{};
+    stats_ = EvaluationManager::EvaluationStats{};
 }
 
-EvaluationStats TapeEvaluationManager::get_stats() const {
+EvaluationManager::EvaluationStats TapeEvaluationManager::get_stats() const {
     return stats_;
 }
 
@@ -71,7 +71,7 @@ std::shared_ptr<Tensor> TapeEvaluationManager::evaluate_impl(const Tensor& tenso
 }
 
 bool TapeEvaluationManager::needs_evaluation(const Tensor& tensor) const {
-    return tensor.is_lazy() && !tensor.is_materialized();
+    return tensor.is_lazy() && !tensor.is_evaluated();
 }
 
 // Implementation of the global evaluation manager function

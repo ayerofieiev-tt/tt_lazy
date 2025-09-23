@@ -7,13 +7,13 @@ set -e
 echo "Installing dependencies with Conan..."
 conan install . --build=missing
 
-echo "Configuring CMake..."
-cmake -B build -DCMAKE_TOOLCHAIN_FILE=build/Release/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release
+echo "Configuring CMake with Ninja (using preset)..."
+cmake --preset conan-release
 
-echo "Building..."
-cmake --build build --config Release
+echo "Building with Ninja..."
+cmake --build --preset conan-release
 
 echo "Running tests..."
-cd build && ctest --output-on-failure
+ctest --preset conan-release
 
 echo "Build complete!"

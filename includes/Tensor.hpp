@@ -45,7 +45,7 @@ public:
     // State information
     State state() const { return state_; }
     bool is_lazy() const { return state_ == State::LAZY; }
-    bool is_materialized() const { return state_ == State::MATERIALIZED; }
+    bool is_evaluated() const { return state_ == State::MATERIALIZED; }
     bool is_constant() const { return is_constant_; }
     bool is_null() const;
     explicit operator bool() const;
@@ -65,10 +65,8 @@ public:
     float* data_ptr();
     const float* const_data_ptr() const;
     std::vector<float> to_vector() const;
-    
-    // Materialization methods
-    void materialize();
-    void force_materialization();
+        
+    void eval();
     
     // Graph visualization methods (for lazy tensors)
     std::string to_string() const;
@@ -115,14 +113,14 @@ private:
     bool is_constant_;
     void* constant_data_; // For constants only
     
-    // Materialization cache
-    mutable std::shared_ptr<Tensor> materialized_cache_;
-    mutable std::atomic<bool> materialization_in_progress_;
+    // Evaluation cache
+    mutable std::shared_ptr<Tensor> evaluation_cache_;
+    mutable std::atomic<bool> evaluation_in_progress_;
     
     // Helper methods
     void allocate_data();
     size_t compute_numel() const;
-    void materialize_impl() const;
+    void eval_impl() const;
     void copy_from_other(const Tensor& other);
     void move_from_other(Tensor&& other);
 };

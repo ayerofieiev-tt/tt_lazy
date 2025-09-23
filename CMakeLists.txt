@@ -1,6 +1,14 @@
 cmake_minimum_required(VERSION 3.16)
 project(tt_lazy VERSION 1.0.0 LANGUAGES CXX)
 
+# Set default generator to Ninja if not specified
+if(NOT CMAKE_GENERATOR)
+    set(CMAKE_GENERATOR "Ninja" CACHE STRING "Default generator" FORCE)
+endif()
+
+# Enable compile commands export for IDEs
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -44,8 +52,8 @@ set_target_properties(tt_lazy_core PROPERTIES
 # Core library includes
 target_include_directories(tt_lazy_core PUBLIC includes)
 
-# Link Boost to core library
-target_link_libraries(tt_lazy_core PUBLIC boost::boost)
+# Link Boost container to core library
+target_link_libraries(tt_lazy_core PUBLIC Boost::container)
 
 # Operations library - depends on core
 set(OPERATIONS_SOURCES
@@ -106,7 +114,6 @@ target_link_libraries(tt_lazy_tests
     tt_lazy_operations
     tt_lazy_tape
     GTest::gtest_main
-    boost::boost
 )
 
 # Set test target properties

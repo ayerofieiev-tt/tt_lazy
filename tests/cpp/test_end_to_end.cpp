@@ -13,12 +13,12 @@ class EndToEndTest : public ::testing::Test {
 protected:
     void SetUp() override {
         Context::instance().clear();
-        get_evaluation_manager().clear_cache();
+        tt_lazy::get_evaluation_manager().clear_cache();
     }
     
     void TearDown() override {
         Context::instance().clear();
-        get_evaluation_manager().clear_cache();
+        tt_lazy::get_evaluation_manager().clear_cache();
     }
     
     // Helper to create test data arrays
@@ -39,7 +39,7 @@ protected:
     
     // Helper to verify tensor data matches expected values
     void verify_tensor_data(const Tensor& tensor, const std::vector<float>& expected, float tolerance = 1e-6f) {
-        ASSERT_TRUE(tensor.is_materialized()) << "Tensor should be materialized for data verification";
+        ASSERT_TRUE(tensor.is_evaluated()) << "Tensor should be evaluated for data verification";
         ASSERT_EQ(tensor.total_elements(), expected.size()) << "Tensor size mismatch";
         
         const float* data = tensor.const_data_ptr();
@@ -67,20 +67,20 @@ TEST_F(EndToEndTest, SimpleMatMulEvaluation) {
     
     // Verify it's lazy initially
     EXPECT_TRUE(result.is_lazy()) << "Result should be lazy before evaluation";
-    EXPECT_FALSE(result.is_materialized()) << "Result should not be materialized yet";
+    EXPECT_FALSE(result.is_evaluated()) << "Result should not be evaluated yet";
     
     std::cout << "Built lazy MatMul operation" << std::endl;
     
     // Force evaluation through materialization
     auto start_time = std::chrono::high_resolution_clock::now();
-    result.materialize();
+    result.eval();
     auto end_time = std::chrono::high_resolution_clock::now();
     
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
     std::cout << "Materialization took: " << duration.count() << " microseconds" << std::endl;
     
     // Verify result is now materialized
-    EXPECT_TRUE(result.is_materialized()) << "Result should be materialized after evaluation";
+    EXPECT_TRUE(result.is_evaluated()) << "Result should be materialized after evaluation";
     EXPECT_FALSE(result.is_lazy()) << "Result should not be lazy after evaluation";
     
     // Verify the computation result
@@ -107,14 +107,14 @@ TEST_F(EndToEndTest, ReLUActivationEvaluation) {
     
     // Force evaluation
     auto start_time = std::chrono::high_resolution_clock::now();
-    result.materialize();
+    result.eval();
     auto end_time = std::chrono::high_resolution_clock::now();
     
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
     std::cout << "ReLU materialization took: " << duration.count() << " microseconds" << std::endl;
     
     // Verify result
-    EXPECT_TRUE(result.is_materialized()) << "Result should be materialized after evaluation";
+    EXPECT_TRUE(result.is_evaluated()) << "Result should be materialized after evaluation";
     
     // Expected: ReLU(x) = max(0, x)
     std::vector<float> expected = {0.0f, 0.0f, 0.0f, 1.0f, 2.0f, 0.0f, 0.5f, 0.0f};
@@ -163,26 +163,26 @@ TEST_F(EndToEndTest, ComplexGraphEvaluation) {
     
     // Force evaluation of the entire graph
     auto start_time = std::chrono::high_resolution_clock::now();
-    final_result.materialize();
+    final_result.eval();
     auto end_time = std::chrono::high_resolution_clock::now();
     
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
     std::cout << "Complex graph evaluation took: " << duration.count() << " microseconds" << std::endl;
     
     // Verify final result is materialized
-    EXPECT_TRUE(final_result.is_materialized()) << "Final result should be materialized";
+    EXPECT_TRUE(final_result.is_evaluated()) << "Final result should be materialized";
     
     // Verify intermediate results are also materialized (due to caching)
     // Note: The original lazy tensors are still lazy, but the evaluation manager
     // has cached materialized versions of them
-    auto& eval_manager = get_evaluation_manager();
+    auto& eval_manager = tt_lazy::get_evaluation_manager();
     auto cached_matmul = eval_manager.evaluate(matmul_result);
     auto cached_relu = eval_manager.evaluate(relu_result);
     auto cached_split = eval_manager.evaluate(split_results[0]);
     
-    EXPECT_TRUE(cached_matmul->is_materialized()) << "Cached MatMul result should be materialized";
-    EXPECT_TRUE(cached_relu->is_materialized()) << "Cached ReLU result should be materialized";
-    EXPECT_TRUE(cached_split->is_materialized()) << "Cached Split result should be materialized";
+    EXPECT_TRUE(cached_matmul->is_evaluated()) << "Cached MatMul result should be materialized";
+    EXPECT_TRUE(cached_relu->is_evaluated()) << "Cached ReLU result should be materialized";
+    EXPECT_TRUE(cached_split->is_evaluated()) << "Cached Split result should be materialized";
     
     std::cout << "Complex graph evaluation successful!" << std::endl;
 }
@@ -229,7 +229,7 @@ TEST_F(EndToEndTest, TapeGenerationAndExecution) {
     // Get result from executor
     auto executed_result = executor.get_result(relu_result.producer_node());
     EXPECT_NE(executed_result, nullptr) << "Executed result should not be null";
-    EXPECT_TRUE(executed_result->is_materialized()) << "Executed result should be materialized";
+    EXPECT_TRUE(executed_result->is_evaluated()) << "Executed result should be materialized";
     
     std::cout << "Tape generation and execution successful!" << std::endl;
 }
@@ -237,7 +237,7 @@ TEST_F(EndToEndTest, TapeGenerationAndExecution) {
 TEST_F(EndToEndTest, EvaluationManagerIntegration) {
     std::cout << "\n=== Testing Evaluation Manager Integration ===" << std::endl;
     
-    auto& eval_manager = get_evaluation_manager();
+    auto& eval_manager = tt_lazy::get_evaluation_manager();
     
     // Create computation graph
     float data1[4], data2[4];  // 2x2 matrices
@@ -259,7 +259,7 @@ TEST_F(EndToEndTest, EvaluationManagerIntegration) {
     std::cout << "Evaluation manager evaluation took: " << duration.count() << " microseconds" << std::endl;
     
     EXPECT_NE(evaluated, nullptr) << "Evaluated result should not be null";
-    EXPECT_TRUE(evaluated->is_materialized()) << "Evaluated result should be materialized";
+    EXPECT_TRUE(evaluated->is_evaluated()) << "Evaluated result should be materialized";
     
     // Test caching - second evaluation should be faster
     auto start_time2 = std::chrono::high_resolution_clock::now();
@@ -270,7 +270,7 @@ TEST_F(EndToEndTest, EvaluationManagerIntegration) {
     std::cout << "Cached evaluation took: " << duration2.count() << " microseconds" << std::endl;
     
     EXPECT_NE(cached_result, nullptr) << "Cached result should not be null";
-    EXPECT_TRUE(cached_result->is_materialized()) << "Cached result should be materialized";
+    EXPECT_TRUE(cached_result->is_evaluated()) << "Cached result should be materialized";
     
     // Verify results are the same
     verify_tensor_data(*evaluated, cached_result->to_vector());
@@ -315,7 +315,7 @@ TEST_F(EndToEndTest, PerformanceBenchmark) {
     
     // Measure evaluation time
     auto start_time = std::chrono::high_resolution_clock::now();
-    final_result.materialize();
+    final_result.eval();
     auto end_time = std::chrono::high_resolution_clock::now();
     
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
@@ -323,11 +323,11 @@ TEST_F(EndToEndTest, PerformanceBenchmark) {
     std::cout << "Evaluation time per element: " << (double)duration.count() / (size * size) << " microseconds" << std::endl;
     
     // Verify result
-    EXPECT_TRUE(final_result.is_materialized()) << "Result should be materialized";
+    EXPECT_TRUE(final_result.is_evaluated()) << "Result should be materialized";
     EXPECT_GT(final_result.total_elements(), 0) << "Result should have elements";
     
     // Test memory usage
-    auto& eval_manager = get_evaluation_manager();
+    auto& eval_manager = tt_lazy::get_evaluation_manager();
     auto stats = eval_manager.get_stats();
     std::cout << "Memory allocated: " << stats.memory_allocated << " bytes" << std::endl;
     std::cout << "Memory per element: " << (double)stats.memory_allocated / (size * size) << " bytes" << std::endl;
@@ -360,29 +360,29 @@ TEST_F(EndToEndTest, MultipleEvaluationPaths) {
     
     // Evaluate ReLU first
     auto start_time = std::chrono::high_resolution_clock::now();
-    relu_result.materialize();
+    relu_result.eval();
     auto end_time = std::chrono::high_resolution_clock::now();
     
     auto duration1 = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
     std::cout << "ReLU evaluation took: " << duration1.count() << " microseconds" << std::endl;
     
     // MatMul should now be cached due to ReLU evaluation
-    auto& eval_manager = get_evaluation_manager();
+    auto& eval_manager = tt_lazy::get_evaluation_manager();
     auto cached_matmul = eval_manager.evaluate(matmul_result);
-    EXPECT_TRUE(cached_matmul->is_materialized()) << "Cached MatMul should be materialized after ReLU evaluation";
+    EXPECT_TRUE(cached_matmul->is_evaluated()) << "Cached MatMul should be materialized after ReLU evaluation";
     
     // Evaluate reduce - should be faster due to cached MatMul result
     auto start_time2 = std::chrono::high_resolution_clock::now();
-    reduce_result.materialize();
+    reduce_result.eval();
     auto end_time2 = std::chrono::high_resolution_clock::now();
     
     auto duration2 = std::chrono::duration_cast<std::chrono::microseconds>(end_time2 - start_time2);
     std::cout << "Reduce evaluation took: " << duration2.count() << " microseconds" << std::endl;
     
-    EXPECT_TRUE(reduce_result.is_materialized()) << "Reduce result should be materialized";
+    EXPECT_TRUE(reduce_result.is_evaluated()) << "Reduce result should be materialized";
     
     // Both results should be materialized
-    EXPECT_TRUE(relu_result.is_materialized()) << "ReLU result should still be materialized";
+    EXPECT_TRUE(relu_result.is_evaluated()) << "ReLU result should still be materialized";
     
     std::cout << "Multiple evaluation paths test successful!" << std::endl;
 }
