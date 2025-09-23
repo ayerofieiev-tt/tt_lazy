@@ -8,6 +8,9 @@ add_library(tt_lazy_tape STATIC
     TapeExecutor.cpp
     TapeEvaluationManager.cpp
     OperationHandlers.cpp
+    passes/TapeOptimizationPass.cpp
+    passes/DeadCodeEliminationPass.cpp
+    passes/MLPFusionPass.cpp
 )
 
 # Set include directories
@@ -21,10 +24,13 @@ target_include_directories(tt_lazy_tape PUBLIC
 target_compile_features(tt_lazy_tape PUBLIC cxx_std_17)
 
 # Tape library depends on core, operations, and math libraries
-target_link_libraries(tt_lazy_tape PRIVATE 
-    tt_lazy_core
-    tt_lazy_operations 
-    tt_math_lib
+# Math library is PRIVATE as it's an implementation detail
+target_link_libraries(tt_lazy_tape 
+    PUBLIC
+        tt_lazy_core
+        tt_lazy_operations 
+    PRIVATE
+        tt_math_lib
 )
 
 # Add compiler-specific flags

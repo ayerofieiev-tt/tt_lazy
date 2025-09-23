@@ -95,7 +95,7 @@ endif()
 
 # Conan integration
 find_package(GTest REQUIRED)
-find_package(Boost REQUIRED COMPONENTS container)
+find_package(Boost REQUIRED)
 find_package(pybind11 REQUIRED)
 
 # Create test executable
@@ -106,12 +106,18 @@ add_executable(tt_lazy_tests
     tests/cpp/test_context.cpp
     tests/cpp/test_operations.cpp
     tests/cpp/test_end_to_end.cpp
+    tests/cpp/test_mlp_demo.cpp
+)
+
+# Add include directories for test executable
+target_include_directories(tt_lazy_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/includes/operations
+    ${CMAKE_SOURCE_DIR}/math
 )
 
 # Link test executable with all libraries and gtest
+# Note: only link tt_lazy_tape as it transitively provides core and operations
 target_link_libraries(tt_lazy_tests
-    tt_lazy_core
-    tt_lazy_operations
     tt_lazy_tape
     GTest::gtest_main
 )
@@ -133,14 +139,14 @@ enable_testing()
 # Add test to CTest
 add_test(NAME tt_lazy_tests COMMAND tt_lazy_tests)
 
-
 # Python module
 pybind11_add_module(tt_lazy_python 
     bindings/python_bindings.cpp
     bindings/core_types.cpp
     bindings/operations.cpp
 )
-target_link_libraries(tt_lazy_python PRIVATE tt_lazy_core tt_lazy_operations tt_lazy_tape pybind11::module boost::boost)
+# Only link tt_lazy_tape as it transitively provides core and operations
+target_link_libraries(tt_lazy_python PRIVATE tt_lazy_tape pybind11::module)
 
 # Print build information
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")

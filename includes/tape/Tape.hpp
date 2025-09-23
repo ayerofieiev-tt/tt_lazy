@@ -6,6 +6,7 @@
 #include <iostream>
 
 // Forward declarations
+class TapeOptimizationPass;
 class TapeExecutor;
 
 // Execution tape - linear sequence of operations
@@ -19,17 +20,16 @@ public:
     // Get operations in execution order
     const std::vector<std::unique_ptr<TapeOperation>>& operations() const;
     
+    // Allow optimization framework to access internals
+    friend class TapeOptimizationPass;
+    friend class TapeGenerator;
+    
     // Find operation by node ID
     TapeOperation* find_operation(NodeId node_id);
     const TapeOperation* find_operation(NodeId node_id) const;
     
     // Get all dependencies for a given node
     std::vector<NodeId> get_dependencies(NodeId node_id) const;
-    
-    // Tape optimization passes
-    void eliminate_dead_code(const std::vector<Tensor>& required_outputs);
-    void fuse_operations(); // Future: operation fusion
-    void reorder_for_memory(); // Future: memory optimization
     
     // Validation
     bool is_valid() const;

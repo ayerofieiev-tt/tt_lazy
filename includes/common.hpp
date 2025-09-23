@@ -22,6 +22,9 @@ class Context;
 using OpTypeId = uint32_t;
 using NodeId = uint32_t;
 
+// Constants
+constexpr NodeId INVALID_NODE_ID = 0;
+
 // Use Boost's small_vector for efficient small collections
 template<typename T, size_t N = 4>
 using SmallVector = boost::container::small_vector<T, N>;

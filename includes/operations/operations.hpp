@@ -27,6 +27,20 @@ DEFINE_OP_ARGS(ReLU,
     bool inplace = false;
 );
 
+DEFINE_OP_ARGS(Add,
+    // No additional arguments needed
+);
+
+DEFINE_OP_ARGS(Multiply,
+    // No additional arguments needed
+);
+
+DEFINE_OP_ARGS(FusedMLP,
+    // Store the fused MLP parameters
+    bool has_relu = true;  // Whether to apply ReLU activation
+    std::string fusion_info = "";  // Debug info about what was fused
+);
+
 // Helper functions
 std::vector<Tensor> make_output_tensors(NodeId node_id, size_t num_outputs, const std::vector<std::vector<uint32_t>>& shapes);
 
@@ -35,4 +49,7 @@ std::vector<Tensor> split(const Tensor& input, int64_t split_size, int32_t dim =
 Tensor matmul(const Tensor& a, const Tensor& b, bool transpose_a = false, bool transpose_b = false);
 Tensor reduce_sum(const Tensor& input, const std::vector<int32_t>& dims = {}, bool keepdim = false);
 Tensor relu(const Tensor& input);
+Tensor add(const Tensor& a, const Tensor& b);
+Tensor multiply(const Tensor& a, const Tensor& b);
+Tensor fused_mlp(const Tensor& input, const Tensor& weights, const Tensor& bias, bool has_relu = true);
 

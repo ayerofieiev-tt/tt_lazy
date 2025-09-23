@@ -119,3 +119,70 @@ Tensor relu(const Tensor& input) {
     return Tensor(node_id, 0, {shape_array[0], shape_array[1], shape_array[2], shape_array[3]});
 }
 
+Tensor add(const Tensor& a, const Tensor& b) {
+    AddArgs args;
+    
+    SmallVector<Tensor, 2> inputs{a, b};
+    
+    NodeId node_id = Context::instance().create_node(inputs, std::move(args));
+    
+    // Output shape is broadcasted shape of inputs
+    std::vector<uint32_t> a_shape(a.shape(), a.shape() + a.rank());
+    std::vector<uint32_t> b_shape(b.shape(), b.shape() + b.rank());
+    auto output_shape = Tensor::broadcast_shapes(a_shape, b_shape);
+    
+    // Convert vector to initializer_list format
+    assert(output_shape.size() <= 4);
+    uint32_t shape_array[4] = {1, 1, 1, 1};
+    for (size_t i = 0; i < output_shape.size(); ++i) {
+        shape_array[i] = output_shape[i];
+    }
+    return Tensor(node_id, 0, {shape_array[0], shape_array[1], shape_array[2], shape_array[3]});
+}
+
+Tensor multiply(const Tensor& a, const Tensor& b) {
+    MultiplyArgs args;
+    
+    SmallVector<Tensor, 2> inputs{a, b};
+    
+    NodeId node_id = Context::instance().create_node(inputs, std::move(args));
+    
+    // Output shape is broadcasted shape of inputs
+    std::vector<uint32_t> a_shape(a.shape(), a.shape() + a.rank());
+    std::vector<uint32_t> b_shape(b.shape(), b.shape() + b.rank());
+    auto output_shape = Tensor::broadcast_shapes(a_shape, b_shape);
+    
+    // Convert vector to initializer_list format
+    assert(output_shape.size() <= 4);
+    uint32_t shape_array[4] = {1, 1, 1, 1};
+    for (size_t i = 0; i < output_shape.size(); ++i) {
+        shape_array[i] = output_shape[i];
+    }
+    return Tensor(node_id, 0, {shape_array[0], shape_array[1], shape_array[2], shape_array[3]});
+}
+
+
+Tensor fused_mlp(const Tensor& input, const Tensor& weights, const Tensor& bias, bool has_relu) {
+    FusedMLPArgs args;
+    args.has_relu = has_relu;
+    args.fusion_info = std::string("MatMul + Add") + (has_relu ? " + ReLU" : "");
+    
+    // Use 3 inputs: input, weights, and bias - much cleaner!
+    SmallVector<Tensor, 3> inputs{input, weights, bias};
+    
+    NodeId node_id = Context::instance().create_node(inputs, std::move(args));
+    
+    // Store bias as additional data - the tape generator will handle this
+    // For now, we assume the operation handler will get bias from the context
+    
+    // Output shape calculation: input @ weights + bias
+    // input: [batch_size, input_features]
+    // weights: [input_features, output_features]  
+    // bias: [1, output_features]
+    // output: [batch_size, output_features]
+    
+    uint32_t batch_size = input.size(0);
+    uint32_t output_features = weights.size(1);
+    
+    return Tensor(node_id, 0, {batch_size, output_features});
+}

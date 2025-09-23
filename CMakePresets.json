@@ -33,20 +33,6 @@
             }
         },
         {
-            "name": "conan-release",
-            "displayName": "Conan Release Config",
-            "description": "Release build with Conan dependencies",
-            "generator": "Ninja",
-            "binaryDir": "build",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release",
-                "CMAKE_CXX_STANDARD": "17",
-                "CMAKE_CXX_STANDARD_REQUIRED": "ON",
-                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-                "CMAKE_TOOLCHAIN_FILE": "build/Release/generators/conan_toolchain.cmake"
-            }
-        },
-        {
             "name": "linux-release",
             "displayName": "Linux Release Config",
             "description": "Release build for Linux systems",
@@ -79,13 +65,6 @@
             "configurePreset": "debug",
             "configuration": "Debug",
             "jobs": 0
-        },
-        {
-            "name": "conan-release",
-            "displayName": "Conan Release Build",
-            "configurePreset": "conan-release",
-            "configuration": "Release",
-            "jobs": 0
         }
     ],
     "testPresets": [
@@ -101,14 +80,6 @@
             "name": "debug",
             "displayName": "Debug Tests",
             "configurePreset": "debug",
-            "output": {
-                "outputOnFailure": true
-            }
-        },
-        {
-            "name": "conan-release",
-            "displayName": "Conan Release Tests",
-            "configurePreset": "conan-release",
             "output": {
                 "outputOnFailure": true
             }

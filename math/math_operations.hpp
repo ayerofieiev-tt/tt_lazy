@@ -24,4 +24,7 @@ Tensor add(const Tensor& a, const Tensor& b);
 Tensor multiply(const Tensor& a, const Tensor& b);
 Tensor transpose(const Tensor& input, const std::vector<int32_t>& dims = {});
 
+// Fused operations for better performance
+Tensor fused_mlp(const Tensor& input, const Tensor& weights, const Tensor& bias, bool has_relu = true);
+
 } // namespace math

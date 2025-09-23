@@ -31,16 +31,33 @@ Tensor add(const Tensor& a, const Tensor& b) {
     Tensor result(output_shape);
     
     // Perform element-wise addition
-    // This is a simplified implementation for same-shaped tensors
+    const float* a_data = a.const_data_ptr();
+    const float* b_data = b.const_data_ptr();
+    float* result_data = result.data_ptr();
+    
     if (a_shape == b_shape) {
-        const float* a_data = a.const_data_ptr();
-        const float* b_data = b.const_data_ptr();
-        float* result_data = result.data_ptr();
+        // Same shapes - simple element-wise addition
         for (size_t i = 0; i < a.total_elements(); ++i) {
             result_data[i] = a_data[i] + b_data[i];
         }
     } else {
-        throw std::runtime_error("Broadcasting addition not fully implemented");
+        // Basic broadcasting support for bias addition (e.g., [N, M] + [1, M])
+        if (a_shape.size() == 2 && b_shape.size() == 2 && 
+            b_shape[0] == 1 && a_shape[1] == b_shape[1]) {
+            // Broadcasting [N, M] + [1, M] -> [N, M]
+            size_t batch_size = a_shape[0];
+            size_t feature_size = a_shape[1];
+            
+            for (size_t batch = 0; batch < batch_size; ++batch) {
+                for (size_t feat = 0; feat < feature_size; ++feat) {
+                    size_t a_idx = batch * feature_size + feat;
+                    size_t b_idx = feat;  // b has shape [1, M], so only varies by feature
+                    result_data[a_idx] = a_data[a_idx] + b_data[b_idx];
+                }
+            }
+        } else {
+            throw std::runtime_error("Broadcasting addition not implemented for these shapes");
+        }
     }
     
     return result;

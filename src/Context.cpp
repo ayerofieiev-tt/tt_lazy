@@ -125,5 +125,3 @@ Context& Context::instance() {
     static Context ctx;
     return ctx;
 }
-
-

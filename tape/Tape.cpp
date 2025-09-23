@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <iostream>
 #include <sstream>
+#include <unordered_set>
 
 // Tape implementation
 void Tape::add_operation(std::unique_ptr<TapeOperation> op) {
@@ -26,51 +27,6 @@ const TapeOperation* Tape::find_operation(NodeId node_id) const {
 std::vector<NodeId> Tape::get_dependencies(NodeId node_id) const {
     const TapeOperation* op = find_operation(node_id);
     return op ? op->input_nodes : std::vector<NodeId>{};
-}
-
-void Tape::eliminate_dead_code(const std::vector<Tensor>& required_outputs) {
-    std::unordered_set<NodeId> required_nodes;
-    
-    // Collect all required nodes by traversing backwards from outputs
-    std::function<void(NodeId)> collect_required = [&](NodeId node_id) {
-        if (required_nodes.count(node_id)) return;
-        required_nodes.insert(node_id);
-        
-        const TapeOperation* op = find_operation(node_id);
-        if (op) {
-            for (NodeId input : op->input_nodes) {
-                collect_required(input);
-            }
-        }
-    };
-    
-    // Start from required outputs
-    for (const auto& tensor : required_outputs) {
-        if (tensor.is_lazy()) {
-            collect_required(tensor.producer_node());
-        }
-    }
-    
-    // Remove operations that are not required
-    operations_.erase(
-        std::remove_if(operations_.begin(), operations_.end(),
-            [&](const std::unique_ptr<TapeOperation>& op) {
-                return required_nodes.count(op->node_id) == 0;
-            }),
-        operations_.end()
-    );
-    
-    build_node_map();
-}
-
-void Tape::fuse_operations() {
-    // TODO: Implement operation fusion
-    // This would combine multiple operations into single kernels
-}
-
-void Tape::reorder_for_memory() {
-    // TODO: Implement memory-optimized reordering
-    // This would reorder operations to minimize memory usage
 }
 
 bool Tape::is_valid() const {
@@ -115,3 +71,5 @@ void Tape::build_node_map() {
         node_to_op_[op->node_id] = op.get();
     }
 }
+
+// apply_mlp_fusion moved to MLPFusionPass

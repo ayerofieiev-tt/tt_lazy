@@ -416,13 +416,6 @@ result = y.to_numpy()         # Automatic evaluation!
 5. **Math**: `math::sigmoid()` performs actual CPU computation
 6. **Result**: Materialized tensor returned to user
 
-## 🎯 Performance
-
-- **Fast Dispatch**: Optimized for minimal operation dispatch overhead
-- **Memory Efficient**: Smart materialization with caching
-- **Graph Optimization**: Dead code elimination and operation fusion
-- **Lazy Evaluation**: Build complex graphs without immediate computation
-
 ## 🏗️ Project Structure
 
 ```
@@ -462,24 +455,3 @@ tt_lazy/
 ## 📄 License
 
 MIT License - see LICENSE file for details.
-
-## 🔮 Roadmap
-
-- [ ] Additional activation functions (Sigmoid, Tanh, etc.)
-- [ ] Convolution operations
-- [ ] Batch normalization
-- [ ] Gradient computation (automatic differentiation)
-- [ ] GPU acceleration
-- [ ] More optimization passes
-- [ ] JIT compilation for hot paths
-
-## 📖 Documentation
-
-- [API Reference](docs/api.md)
-- [Performance Guide](docs/performance.md)
-- [Contributing Guide](docs/contributing.md)
-- [Examples](examples/)
-
----
-
-**TT Lazy** - High-performance lazy evaluation for machine learning 🚀

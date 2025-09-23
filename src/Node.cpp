@@ -21,7 +21,7 @@ std::string_view Node::op_name() const {
     return args_base()->op_name(); 
 }
 
-const SmallVector<Tensor, 2>& Node::inputs() const { 
+const SmallVector<Tensor, 4>& Node::inputs() const { 
     return inputs_; 
 }
 

@@ -8,8 +8,28 @@ class Node {
 public:
     template<typename ArgsT>
     Node(NodeId id, const SmallVector<Tensor, 2>& inputs, ArgsT&& args) 
-        : id_(id), type_id_(detail::get_op_id<std::decay_t<ArgsT>>()), inputs_(inputs), output_nodes_() {
+        : id_(id), type_id_(detail::get_op_id<std::decay_t<ArgsT>>()), output_nodes_() {
         static_assert(sizeof(ArgsT) <= sizeof(args_storage_), "Args too large for inline storage");
+        
+        // Copy inputs to our larger container
+        for (const auto& input : inputs) {
+            inputs_.push_back(input);
+        }
+        
+        new (args_storage_) std::decay_t<ArgsT>(std::forward<ArgsT>(args));
+    }
+    
+    // Constructor for variable number of inputs
+    template<typename ArgsT, size_t N>
+    Node(NodeId id, const SmallVector<Tensor, N>& inputs, ArgsT&& args) 
+        : id_(id), type_id_(detail::get_op_id<std::decay_t<ArgsT>>()), output_nodes_() {
+        static_assert(sizeof(ArgsT) <= sizeof(args_storage_), "Args too large for inline storage");
+        
+        // Store inputs in the fixed-size container (extend if needed)
+        for (size_t i = 0; i < inputs.size() && i < inputs_.max_size(); ++i) {
+            inputs_.push_back(inputs[i]);
+        }
+        
         new (args_storage_) std::decay_t<ArgsT>(std::forward<ArgsT>(args));
     }
     
@@ -48,7 +68,7 @@ public:
     
     std::string_view op_name() const;
     
-    const SmallVector<Tensor, 2>& inputs() const;
+    const SmallVector<Tensor, 4>& inputs() const;
     const SmallVector<NodeId, 2>& output_nodes() const;
     
     void add_output_node(NodeId node_id);
@@ -56,7 +76,7 @@ public:
 private:
     NodeId id_;
     OpTypeId type_id_;
-    SmallVector<Tensor, 2> inputs_;
+    SmallVector<Tensor, 4> inputs_;
     SmallVector<NodeId, 2> output_nodes_;
     alignas(std::max_align_t) char args_storage_[256];
 };

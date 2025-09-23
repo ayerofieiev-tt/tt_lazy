@@ -1,9 +1,16 @@
 #include "TapeGenerator.hpp"
 #include "Context.hpp"
 #include "Node.hpp"
+#include "passes/TapeOptimizationPass.hpp"
+#include "passes/DeadCodeEliminationPass.hpp"
+#include "passes/MLPFusionPass.hpp"
 #include <algorithm>
 #include <queue>
 #include <unordered_set>
+
+// Static member definitions
+std::vector<std::unique_ptr<TapeOptimizationPass>> TapeGenerator::optimization_passes_;
+bool TapeGenerator::default_passes_registered_ = false;
 
 std::unique_ptr<Tape> TapeGenerator::generate_tape(const std::vector<Tensor>& outputs) {
     auto tape = std::make_unique<Tape>();
@@ -21,6 +28,33 @@ std::unique_ptr<Tape> TapeGenerator::generate_tape(const std::vector<Tensor>& ou
         if (node) {
             auto tape_op = create_tape_operation(*node);
             tape->add_operation(std::move(tape_op));
+        }
+    }
+    
+    // Apply optimization passes if enabled
+    if (optimization_enabled_) {
+        // Register default passes if not already done
+        if (!default_passes_registered_) {
+            register_default_passes();
+        }
+        
+        std::cout << "🔧 Applying " << optimization_passes_.size() << " optimization passes..." << std::endl;
+        
+        // Sort passes by priority
+        std::vector<TapeOptimizationPass*> sorted_passes;
+        for (const auto& pass : optimization_passes_) {
+            sorted_passes.push_back(pass.get());
+        }
+        std::sort(sorted_passes.begin(), sorted_passes.end(), 
+                 [](const TapeOptimizationPass* a, const TapeOptimizationPass* b) {
+                     return a->priority() < b->priority();
+                 });
+        
+        // Apply each pass
+        for (auto* pass : sorted_passes) {
+            std::cout << "  🔧 Running " << pass->name() << " pass..." << std::endl;
+            int optimizations = pass->apply(*tape, outputs);
+            std::cout << "    📊 " << optimizations << " optimizations applied" << std::endl;
         }
     }
     
@@ -130,4 +164,30 @@ std::unique_ptr<TapeOperation> TapeGenerator::create_tape_operation(const Node& 
     op->output_shapes.push_back(shape);
     
     return op;
+}
+
+// Optimization pass registry implementation
+void TapeGenerator::register_optimization_pass(std::unique_ptr<TapeOptimizationPass> pass) {
+    optimization_passes_.push_back(std::move(pass));
+}
+
+void TapeGenerator::register_default_passes() {
+    if (default_passes_registered_) return;
+    
+    std::cout << "🔧 Registering default optimization passes..." << std::endl;
+    
+    // Register dead code elimination (priority 10)
+    register_optimization_pass(std::make_unique<DeadCodeEliminationPass>());
+    std::cout << "  ✅ Registered DeadCodeElimination pass" << std::endl;
+    
+    // Register MLP fusion (priority 50)
+    register_optimization_pass(std::make_unique<MLPFusionPass>());
+    std::cout << "  ✅ Registered MLPFusion pass" << std::endl;
+    
+    default_passes_registered_ = true;
+}
+
+void TapeGenerator::clear_passes() {
+    optimization_passes_.clear();
+    default_passes_registered_ = false;
 }
