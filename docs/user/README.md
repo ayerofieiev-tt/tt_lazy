@@ -273,7 +273,7 @@ Adding a new operation requires implementing three layers: **Frontend**, **Math*
 
 ### 1. Frontend Operation (Graph Building)
 
-**File**: `includes/operations/operations.hpp` and `operations/operations.cpp`
+**File**: `includes/operations/operations.hpp` and `frontend/operations.cpp`
 
 ```cpp
 // 1. Define operation arguments
@@ -420,7 +420,7 @@ result = y.to_numpy()         # Automatic evaluation!
 
 ```
 tt_lazy/
-├── src/                    # Core source files
+├── core/                   # Core source files
 │   ├── Tensor.cpp         # Tensor implementation
 │   ├── Node.cpp           # Graph node implementation
 │   ├── Context.cpp        # Global context
@@ -431,7 +431,7 @@ tt_lazy/
 │   ├── Context.hpp        # Context interface
 │   ├── operations/        # Operation definitions
 │   └── tape/              # Tape system headers
-├── operations/            # Graph-based operations
+├── frontend/              # Graph-based operations
 ├── math/                  # Immediate computation operations
 ├── tape/                  # Tape execution system
 ├── bindings/              # Python bindings

@@ -138,20 +138,20 @@ endif()
 
 # Core library - basic graph infrastructure
 set(CORE_SOURCES
-    src/Tensor.cpp
-    src/Node.cpp
-    src/Context.cpp
-    src/MemoryManager.cpp
+    core/Tensor.cpp
+    core/Node.cpp
+    core/Context.cpp
+    core/MemoryManager.cpp
 )
 
 set(CORE_HEADERS
-    includes/common.hpp
-    includes/Tensor.hpp
-    includes/OpArgs.hpp
-    includes/Node.hpp
-    includes/Context.hpp
-    includes/MemoryManager.hpp
-    includes/EvaluationManager.hpp
+    core/common.hpp
+    core/Tensor.hpp
+    core/OpArgs.hpp
+    core/Node.hpp
+    core/Context.hpp
+    core/MemoryManager.hpp
+    core/EvaluationManager.hpp
 )
 
 # Create core library
@@ -164,7 +164,7 @@ set_target_properties(tt_lazy_core PROPERTIES
 )
 
 # Core library includes
-target_include_directories(tt_lazy_core PUBLIC includes)
+target_include_directories(tt_lazy_core PUBLIC core)
 
 # Link Boost container and spdlog to core library
 target_link_libraries(tt_lazy_core PUBLIC Boost::container spdlog::spdlog)
@@ -174,11 +174,11 @@ add_sanitizer_flags(tt_lazy_core)
 
 # Operations library - depends on core
 set(OPERATIONS_SOURCES
-    operations/operations.cpp
+    frontend/operations.cpp
 )
 
 set(OPERATIONS_HEADERS
-    includes/operations/operations.hpp
+    frontend/operations.hpp
 )
 
 # Create operations library
@@ -192,19 +192,19 @@ set_target_properties(tt_lazy_operations PROPERTIES
 
 # Operations library depends on core and inherits its include directories
 target_link_libraries(tt_lazy_operations PUBLIC tt_lazy_core)
-target_include_directories(tt_lazy_operations PUBLIC includes/operations)
+target_include_directories(tt_lazy_operations PUBLIC frontend)
 
 # Apply sanitizers to operations library
 add_sanitizer_flags(tt_lazy_operations)
 
 # Math library - immediate computation operations
 set(MATH_SOURCES
-    math/split.cpp
-    math/matmul.cpp
-    math/reduce_sum.cpp
-    math/eltwise.cpp
-    math/transpose.cpp
-    math/fused_ops.cpp
+    backend/cpu/split.cpp
+    backend/cpu/matmul.cpp
+    backend/cpu/reduce_sum.cpp
+    backend/cpu/eltwise.cpp
+    backend/cpu/transpose.cpp
+    backend/cpu/fused_ops.cpp
 )
 
 # Create math library
@@ -218,7 +218,7 @@ set_target_properties(tt_math_lib PROPERTIES
 
 # Math library includes and dependencies
 target_include_directories(tt_math_lib PUBLIC
-    ${CMAKE_SOURCE_DIR}/math
+    ${CMAKE_SOURCE_DIR}/backend/cpu
 )
 target_link_libraries(tt_math_lib PUBLIC tt_lazy_core)
 
@@ -254,8 +254,9 @@ set_target_properties(tt_lazy_tape PROPERTIES
 # Tape library includes and dependencies
 target_include_directories(tt_lazy_tape PUBLIC
     ${CMAKE_SOURCE_DIR}/tape
-    ${CMAKE_SOURCE_DIR}/includes
-    ${CMAKE_SOURCE_DIR}/includes/tape
+    ${CMAKE_SOURCE_DIR}/core
+    ${CMAKE_SOURCE_DIR}/frontend
+    ${CMAKE_SOURCE_DIR}/backend/cpu
 )
 
 # Tape library depends on core, operations, and math libraries
@@ -295,18 +296,21 @@ find_package(spdlog REQUIRED)
 # Create test executable
 add_executable(tt_lazy_tests
     tests/cpp/test_main.cpp
-    tests/cpp/test_tensor.cpp
-    tests/cpp/test_node.cpp
-    tests/cpp/test_context.cpp
-    tests/cpp/test_operations.cpp
-    tests/cpp/test_end_to_end.cpp
-    tests/cpp/test_mlp_demo.cpp
+    tests/cpp/unit/test_tensor.cpp
+    tests/cpp/unit/test_node.cpp
+    tests/cpp/unit/test_context.cpp
+    tests/cpp/unit/math/test_math_ops.cpp
+    tests/cpp/integration/test_operations.cpp
+    tests/cpp/integration/test_end_to_end.cpp
+    tests/cpp/benchmarks/test_mlp_demo.cpp
 )
 
 # Add include directories for test executable
 target_include_directories(tt_lazy_tests PRIVATE
-    ${CMAKE_SOURCE_DIR}/includes/operations
-    ${CMAKE_SOURCE_DIR}/math
+    ${CMAKE_SOURCE_DIR}/frontend
+    ${CMAKE_SOURCE_DIR}/backend/cpu
+    ${CMAKE_SOURCE_DIR}/core
+    ${CMAKE_SOURCE_DIR}/tape
 )
 
 # Link test executable with all libraries and gtest
@@ -373,20 +377,23 @@ message(STATUS "  Clang-Tidy: ${ENABLE_CLANG_TIDY}")
 
 # Optional: Add install targets
 install(TARGETS tt_lazy_core tt_lazy_operations tt_lazy_tape DESTINATION lib)
-install(DIRECTORY includes/ DESTINATION include/tt_lazy)
+install(DIRECTORY core/ DESTINATION include/tt_lazy/core FILES_MATCHING PATTERN "*.hpp")
+install(DIRECTORY frontend/ DESTINATION include/tt_lazy/frontend FILES_MATCHING PATTERN "*.hpp")
 install(DIRECTORY tape/ DESTINATION include/tt_lazy/tape FILES_MATCHING PATTERN "*.hpp")
+install(DIRECTORY backend/cpu/ DESTINATION include/tt_lazy/backend/cpu FILES_MATCHING PATTERN "*.hpp")
 
 # Custom target to run clang-tidy manually on all source files
 if(CLANG_TIDY_EXE)
     # Collect all source files
     file(GLOB_RECURSE ALL_SOURCE_FILES
-        ${CMAKE_SOURCE_DIR}/src/*.cpp
-        ${CMAKE_SOURCE_DIR}/includes/*.hpp
-        ${CMAKE_SOURCE_DIR}/operations/*.cpp
+        ${CMAKE_SOURCE_DIR}/core/*.cpp
+        ${CMAKE_SOURCE_DIR}/core/*.hpp
+        ${CMAKE_SOURCE_DIR}/frontend/*.cpp
+        ${CMAKE_SOURCE_DIR}/frontend/*.hpp
         ${CMAKE_SOURCE_DIR}/tape/*.cpp
         ${CMAKE_SOURCE_DIR}/tape/*.hpp
-        ${CMAKE_SOURCE_DIR}/math/*.cpp
-        ${CMAKE_SOURCE_DIR}/math/*.hpp
+        ${CMAKE_SOURCE_DIR}/backend/cpu/*.cpp
+        ${CMAKE_SOURCE_DIR}/backend/cpu/*.hpp
         ${CMAKE_SOURCE_DIR}/bindings/*.cpp
     )
 

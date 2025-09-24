@@ -12,7 +12,7 @@ In TT Lazy's lazy evaluation system, computation goes through two distinct phase
 
 **Purpose**: Represents operations in the computation graph during the lazy evaluation phase.
 
-**Location**: `includes/Node.hpp`, `src/Node.cpp`
+**Location**: `includes/Node.hpp`, `core/Node.cpp`
 
 ### Key Characteristics
 

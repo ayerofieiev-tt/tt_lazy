@@ -1,10 +1,9 @@
 #include "Context.hpp"
+#include "TapeEvaluationManager.hpp"
+#include "TapeExecutor.hpp"
+#include "TapeGenerator.hpp"
 #include "Tensor.hpp"
 #include "operations.hpp"
-
-#include "tape/TapeEvaluationManager.hpp"
-#include "tape/TapeExecutor.hpp"
-#include "tape/TapeGenerator.hpp"
 
 #include <chrono>
 #include <iomanip>

@@ -1,4 +1,4 @@
-#include "operations/operations.hpp"
+#include "operations.hpp"
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
