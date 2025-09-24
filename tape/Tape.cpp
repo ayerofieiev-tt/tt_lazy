@@ -1,8 +1,11 @@
 #include "Tape.hpp"
+
 #include <algorithm>
 #include <iostream>
 #include <sstream>
 #include <unordered_set>
+
+#include <spdlog/spdlog.h>
 
 // Tape implementation
 void Tape::add_operation(std::unique_ptr<TapeOperation> op) {
@@ -51,18 +54,33 @@ void Tape::print_tape(std::ostream& os) const {
     os << "Tape with " << operations_.size() << " operations:\n";
     for (size_t i = 0; i < operations_.size(); ++i) {
         const auto& op = operations_[i];
-        os << "  " << i << ": Node " << op->node_id 
-           << " (op_type: " << op->op_type << ")\n";
-        os << "    Inputs: ";
+
+        // Build inputs string
+        std::string inputs_str;
         for (NodeId input : op->input_nodes) {
-            os << input << " ";
+            if (!inputs_str.empty())
+                inputs_str += " ";
+            inputs_str += std::to_string(input);
         }
-        os << "\n    Outputs: ";
+
+        // Build outputs string
+        std::string outputs_str;
         for (NodeId output : op->output_nodes) {
-            os << output << " ";
+            if (!outputs_str.empty())
+                outputs_str += " ";
+            outputs_str += std::to_string(output);
         }
-        os << "\n";
+
+        os << "  " << i << ": Node " << op->node_id << " (op_type: " << op->op_type << ")\n";
+        os << "    Inputs: " << inputs_str << "\n";
+        os << "    Outputs: " << outputs_str << "\n";
     }
+}
+
+void Tape::print_tape() const {
+    std::ostringstream oss;
+    print_tape(oss);
+    spdlog::info("{}", oss.str());
 }
 
 void Tape::build_node_map() {

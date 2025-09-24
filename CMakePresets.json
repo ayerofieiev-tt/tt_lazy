@@ -2,84 +2,75 @@
     "version": 6,
     "configurePresets": [
         {
-            "name": "default",
-            "displayName": "Default Config with Ninja",
-            "description": "Default build configuration using Ninja",
+            "name": "dev",
+            "displayName": "Development Build",
+            "description": "Development build with all sanitizers, static analysis, and debugging enabled",
             "generator": "Ninja",
-            "binaryDir": "build",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release",
-                "CMAKE_CXX_STANDARD": "17",
-                "CMAKE_CXX_STANDARD_REQUIRED": "ON",
-                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
-            },
-            "condition": {
-                "type": "equals",
-                "lhs": "${hostSystemName}",
-                "rhs": "Darwin"
-            }
-        },
-        {
-            "name": "debug",
-            "displayName": "Debug Config with Ninja",
-            "description": "Debug build configuration using Ninja",
-            "generator": "Ninja",
-            "binaryDir": "build-debug",
+            "binaryDir": "build-dev",
+            "toolchainFile": "build/Debug/generators/conan_toolchain.cmake",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
                 "CMAKE_CXX_STANDARD": "17",
                 "CMAKE_CXX_STANDARD_REQUIRED": "ON",
-                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "ENABLE_CLANG_TIDY": "ON",
+                "ENABLE_ASAN": "ON",
+                "ENABLE_UBSAN": "ON",
+                "ENABLE_TSAN": "OFF",
+                "ENABLE_MSAN": "OFF",
+                "ENABLE_ALL_SANITIZERS": "OFF"
             }
         },
         {
-            "name": "linux-release",
-            "displayName": "Linux Release Config",
-            "description": "Release build for Linux systems",
+            "name": "release",
+            "displayName": "Release Build",
+            "description": "Optimized release build for production use",
             "generator": "Ninja",
-            "binaryDir": "build",
+            "binaryDir": "build-release",
+            "toolchainFile": "build/Release/generators/conan_toolchain.cmake",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
                 "CMAKE_CXX_STANDARD": "17",
                 "CMAKE_CXX_STANDARD_REQUIRED": "ON",
-                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
-            },
-            "condition": {
-                "type": "equals",
-                "lhs": "${hostSystemName}",
-                "rhs": "Linux"
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "ENABLE_CLANG_TIDY": "OFF",
+                "ENABLE_ASAN": "OFF",
+                "ENABLE_UBSAN": "OFF",
+                "ENABLE_TSAN": "OFF",
+                "ENABLE_MSAN": "OFF",
+                "ENABLE_ALL_SANITIZERS": "OFF"
             }
         }
     ],
     "buildPresets": [
         {
-            "name": "default",
-            "displayName": "Default Build",
-            "configurePreset": "default",
-            "configuration": "Release",
+            "name": "dev",
+            "displayName": "Development Build",
+            "configurePreset": "dev",
+            "configuration": "Debug",
             "jobs": 0
         },
         {
-            "name": "debug",
-            "displayName": "Debug Build", 
-            "configurePreset": "debug",
-            "configuration": "Debug",
+            "name": "release",
+            "displayName": "Release Build",
+            "configurePreset": "release",
+            "configuration": "Release",
             "jobs": 0
         }
     ],
     "testPresets": [
         {
-            "name": "default",
-            "displayName": "Default Tests",
-            "configurePreset": "default",
+            "name": "dev",
+            "displayName": "Development Tests",
+            "configurePreset": "dev",
             "output": {
                 "outputOnFailure": true
             }
         },
         {
-            "name": "debug",
-            "displayName": "Debug Tests",
-            "configurePreset": "debug",
+            "name": "release",
+            "displayName": "Release Tests",
+            "configurePreset": "release",
             "output": {
                 "outputOnFailure": true
             }

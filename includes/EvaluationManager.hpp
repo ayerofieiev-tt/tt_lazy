@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Tensor.hpp"
+
 #include <memory>
 
 namespace tt_lazy {
@@ -11,21 +12,28 @@ namespace tt_lazy {
  * to be implemented without creating circular dependencies.
  */
 class EvaluationManager {
-public:
+   public:
     virtual ~EvaluationManager() = default;
-    
+
+    // Non-copyable, non-movable (abstract base class)
+    EvaluationManager(const EvaluationManager&) = delete;
+    EvaluationManager& operator=(const EvaluationManager&) = delete;
+    EvaluationManager(EvaluationManager&&) = delete;
+    EvaluationManager& operator=(EvaluationManager&&) = delete;
+
+   public:
     /**
      * Evaluate a lazy tensor and return a materialized result.
      * @param tensor The lazy tensor to evaluate
      * @return A shared pointer to the materialized tensor
      */
     virtual std::shared_ptr<Tensor> evaluate(const Tensor& tensor) = 0;
-    
+
     /**
      * Clear any cached evaluation results.
      */
     virtual void clear_cache() = 0;
-    
+
     /**
      * Evaluation statistics structure.
      */
@@ -40,6 +48,9 @@ public:
      * Get evaluation statistics (optional, can return empty struct).
      */
     virtual EvaluationStats get_stats() const = 0;
+
+   protected:
+    EvaluationManager() = default;
 };
 
 /**
@@ -49,4 +60,4 @@ public:
  */
 EvaluationManager& get_evaluation_manager();
 
-} // namespace tt_lazy
+}  // namespace tt_lazy

@@ -11,7 +11,7 @@ PYBIND11_MODULE(tt_lazy, m) {
 
     // Bind core types (Tensor, Node, Context)
     bind_core_types(m);
-    
+
     // Bind operations (matmul, relu, split, reduce_sum)
     bind_operations(m);
 }

@@ -1,12 +1,13 @@
 #pragma once
-#include "common.hpp"
 #include "OpArgs.hpp"
-#include <string>
-#include <ostream>
-#include <memory>
-#include <vector>
-#include <unordered_map>
+#include "common.hpp"
+
 #include <atomic>
+#include <memory>
+#include <ostream>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 // Forward declarations
 class Context;
@@ -14,34 +15,36 @@ class Node;
 
 // Unified Tensor class that can be either lazy (graph-based) or materialized (data-based)
 class Tensor {
-public:
+   public:
     // Tensor state
     enum class State {
-        LAZY,        // Contains graph node information
-        MATERIALIZED // Contains actual data
+        LAZY,         // Contains graph node information
+        MATERIALIZED  // Contains actual data
     };
 
     // Default constructor - null tensor
     Tensor();
-    
+
     // Create lazy tensor from node output
-    Tensor(NodeId producer, uint16_t output_idx, std::initializer_list<uint32_t> shape);
-    
+    Tensor(NodeId producer_node_id, uint16_t output_index,
+           std::initializer_list<uint32_t>
+               shape);  // NOLINT(bugprone-easily-swappable-parameters) - Semantically different parameters
+
     // Create materialized tensor with data
     Tensor(std::initializer_list<uint32_t> shape);
     Tensor(const std::vector<uint32_t>& shape);
     Tensor(const std::vector<uint32_t>& shape, const std::vector<float>& data);
-    Tensor(void* data, std::initializer_list<uint32_t> shape); // For constants
-    
+    Tensor(void* data, std::initializer_list<uint32_t> shape);  // For constants
+
     // Copy/move constructors
     Tensor(const Tensor& other);
     Tensor(Tensor&& other) noexcept;
     Tensor& operator=(const Tensor& other);
     Tensor& operator=(Tensor&& other) noexcept;
-    
+
     // Destructor
     ~Tensor();
-    
+
     // State information
     State state() const { return state_; }
     bool is_lazy() const { return state_ == State::LAZY; }
@@ -49,74 +52,76 @@ public:
     bool is_constant() const { return is_constant_; }
     bool is_null() const;
     explicit operator bool() const;
-    
+
     // Lazy tensor methods
     NodeId producer_node() const;
     uint16_t output_index() const;
-    
+
     // Shape information (works for both states)
     const uint32_t* shape() const;
     uint16_t rank() const;
     uint32_t size(size_t dim) const;
     size_t total_elements() const;
     bool is_scalar() const;
-    
+
     // Data access (requires materialization for lazy tensors)
     float* data_ptr();
     const float* const_data_ptr() const;
     std::vector<float> to_vector() const;
-        
+
     void eval();
-    
+
     // Graph visualization methods (for lazy tensors)
     std::string to_string() const;
-    void print_graph(std::ostream& os = std::cout, int indent = 0) const;
-    
+    void print_graph(std::ostream& os, int indent = 0) const;
+    void print_graph(int indent = 0) const;  // Uses spdlog for output
+
     // Helper for graph traversal
     struct GraphNode {
-        NodeId id;
+        NodeId id{};
         std::string op_name;
         std::vector<std::string> args;
         std::vector<GraphNode> inputs;
-        int depth;
+        int depth{};
     };
-    
-    GraphNode build_graph_node(int max_depth = 10) const;
-    
+
+    static constexpr int DEFAULT_MAX_DEPTH = 10;
+
+    GraphNode build_graph_node(int max_depth = DEFAULT_MAX_DEPTH) const;
+
     // Utility methods
     void fill(float value);
     void print() const;
     Tensor reshape(const std::vector<uint32_t>& new_shape) const;
-    
-    // Broadcasting helpers
-    static std::vector<uint32_t> broadcast_shapes(const std::vector<uint32_t>& shape1, 
-                                                 const std::vector<uint32_t>& shape2);
-    static bool can_broadcast(const std::vector<uint32_t>& shape1, 
-                             const std::vector<uint32_t>& shape2);
 
-private:
+    // Broadcasting helpers
+    static std::vector<uint32_t> broadcast_shapes(const std::vector<uint32_t>& shape1,
+                                                  const std::vector<uint32_t>& shape2);
+    static bool can_broadcast(const std::vector<uint32_t>& shape1, const std::vector<uint32_t>& shape2);
+
+   private:
     State state_;
-    
+
     // Lazy state data
     NodeId producer_node_;
     uint16_t output_index_;
-    
+
     // Shape information (common to both states)
     uint16_t rank_;
-    uint32_t shape_[4];
-    
+    uint32_t shape_[4];  // NOLINT(cppcoreguidelines-avoid-c-arrays) - Fixed-size tensor shape storage
+
     // Materialized state data
-    std::unique_ptr<float[]> data_;
+    std::unique_ptr<float[]> data_;  // NOLINT(cppcoreguidelines-avoid-c-arrays) - Dynamic array for tensor data
     size_t numel_;
-    
+
     // Constant flag
     bool is_constant_;
-    void* constant_data_; // For constants only
-    
+    void* constant_data_;  // For constants only
+
     // Evaluation cache
     mutable std::shared_ptr<Tensor> evaluation_cache_;
     mutable std::atomic<bool> evaluation_in_progress_;
-    
+
     // Helper methods
     void allocate_data();
     size_t compute_numel() const;

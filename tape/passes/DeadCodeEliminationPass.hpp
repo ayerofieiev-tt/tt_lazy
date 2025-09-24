@@ -3,8 +3,9 @@
 
 // Dead code elimination pass - removes unused operations
 class DeadCodeEliminationPass : public TapeOptimizationPass {
-public:
+   public:
     int apply(Tape& tape, const std::vector<Tensor>& outputs) override;
     std::string name() const override { return "DeadCodeElimination"; }
-    int priority() const override { return 10; } // Run early
+    static constexpr int EARLY_PRIORITY = 10;
+    int priority() const override { return EARLY_PRIORITY; }
 };

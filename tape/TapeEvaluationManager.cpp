@@ -1,8 +1,10 @@
 #include "TapeEvaluationManager.hpp"
-#include "TapeGenerator.hpp"
-#include "TapeExecutor.hpp"
+
 #include "Context.hpp"
 #include "Node.hpp"
+#include "TapeExecutor.hpp"
+#include "TapeGenerator.hpp"
+
 #include <algorithm>
 #include <stdexcept>
 
@@ -82,4 +84,4 @@ EvaluationManager& get_evaluation_manager() {
     return *instance;
 }
 
-} // namespace tt_lazy
+}  // namespace tt_lazy

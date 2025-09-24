@@ -1,9 +1,11 @@
 #include "TapeOptimizationPass.hpp"
+
 #include "Tape.hpp"
 
 // Implementation of helper methods for accessing Tape internals
 std::vector<std::unique_ptr<TapeOperation>>& TapeOptimizationPass::get_operations(Tape& tape) {
-    return const_cast<std::vector<std::unique_ptr<TapeOperation>>&>(tape.operations());
+    return const_cast<std::vector<std::unique_ptr<TapeOperation>>&>(
+        tape.operations());  // NOLINT(cppcoreguidelines-pro-type-const-cast) - Optimization pass needs mutable access
 }
 
 void TapeOptimizationPass::rebuild_node_map(Tape& tape) {

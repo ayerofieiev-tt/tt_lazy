@@ -1,25 +1,27 @@
 #include "TapeExecutor.hpp"
+
 #include "Tape.hpp"
+
 #include <algorithm>
 #include <stdexcept>
 
 void TapeExecutor::execute_tape(Tape& tape) {
     for (const auto& op : tape.operations()) {
-        execute_operation(*op, tape);
+        execute_operation(*op);
     }
 }
 
-void TapeExecutor::execute_operation(TapeOperation& op, Tape& tape) {
+void TapeExecutor::execute_operation(TapeOperation& op) {
     // Check if already executed
     if (op.is_evaluated) {
         return;
     }
-    
+
     // Check if operation type is registered
     if (op.op_type >= operation_handlers_.size() || !operation_handlers_[op.op_type]) {
         throw std::runtime_error("Unknown operation type: " + std::to_string(op.op_type));
     }
-    
+
     // Execute the registered handler
     operation_handlers_[op.op_type](op, *this);
     op.is_evaluated = true;
@@ -58,7 +60,7 @@ size_t TapeExecutor::memory_usage() const {
     size_t total = 0;
     for (const auto& [node_id, tensor] : results_) {
         if (tensor) {
-            total += tensor->total_elements() * sizeof(float); // Simplified
+            total += tensor->total_elements() * sizeof(float);  // Simplified
         }
     }
     return total;

@@ -45,6 +45,10 @@ __pycache__/
 dist/
 .eggs/
 
+# Pre-commit
+.pre-commit-config.yaml.lock
+.pre-commit/
+
 # IDE and editor files
 .vscode/
 .idea/

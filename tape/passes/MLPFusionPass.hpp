@@ -3,8 +3,9 @@
 
 // MLP fusion pass - fuses MatMul + Add + ReLU patterns
 class MLPFusionPass : public TapeOptimizationPass {
-public:
+   public:
     int apply(Tape& tape, const std::vector<Tensor>& outputs) override;
     std::string name() const override { return "MLPFusion"; }
-    int priority() const override { return 50; } // Run after dead code elimination
+    static constexpr int MLP_FUSION_PRIORITY = 50;
+    int priority() const override { return MLP_FUSION_PRIORITY; }
 };

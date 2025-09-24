@@ -1,0 +1,96 @@
+# Clang-Format Configuration for tt_lazy Project
+# Based on Google style with modifications
+
+BasedOnStyle: Google
+
+# Indentation
+IndentWidth: 4
+ContinuationIndentWidth: 4
+IndentCaseLabels: true
+IndentPPDirectives: None
+UseTab: Never
+
+# Line Breaking
+ColumnLimit: 120
+AlignAfterOpenBracket: Align
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
+AlignEscapedNewlines: Left
+AlignOperands: true
+AlignTrailingComments: true
+
+# Braces and Spacing
+BreakBeforeBraces: Attach
+SpaceBeforeParens: ControlStatements
+SpacesInParentheses: false
+SpacesInAngles: false
+SpaceInEmptyParentheses: false
+SpacesInCStyleCastParentheses: false
+SpaceAfterCStyleCast: false
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeCpp11BracedList: false
+SpaceBeforeCtorInitializerColon: true
+SpaceBeforeInheritanceColon: true
+SpaceBeforeRangeBasedForLoopColon: true
+
+# Include Sorting
+IncludeBlocks: Regroup
+IncludeCategories:
+  # Main header for a source file (e.g., foo.cpp -> foo.h)
+  - Regex:           '^"([^/]+\.h(pp)?|[^/]+)"$'
+    Priority:        1
+  # Project headers with relative paths
+  - Regex:           '^"[^/]+/.*\.h(pp)?"$'
+    Priority:        2
+  # Standard library headers
+  - Regex:           '^<[^/]+>$'
+    Priority:        3
+  # Other system headers
+  - Regex:           '^<.*>$'
+    Priority:        4
+  # Everything else
+  - Regex:           '.*'
+    Priority:        5
+
+# Function and Class Formatting
+AllowShortFunctionsOnASingleLine: InlineOnly
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AllowShortBlocksOnASingleLine: false
+AlwaysBreakTemplateDeclarations: Yes
+BinPackArguments: true
+BinPackParameters: true
+BreakConstructorInitializers: BeforeColon
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+ConstructorInitializerIndentWidth: 4
+
+# Comments
+ReflowComments: true
+CommentPragmas: '^ IWYU pragma:|^ NOLINT'
+
+# Namespaces
+NamespaceIndentation: None
+CompactNamespaces: false
+
+# C++11 Features
+Cpp11BracedListStyle: true
+Standard: c++17
+
+# Penalties (for line breaking decisions)
+PenaltyBreakAssignment: 2
+PenaltyBreakBeforeFirstCallParameter: 1
+PenaltyBreakComment: 300
+PenaltyBreakFirstLessLess: 120
+PenaltyBreakString: 1000
+PenaltyExcessCharacter: 1000000
+PenaltyReturnTypeOnItsOwnLine: 200
+
+# Pointer and Reference Alignment
+PointerAlignment: Left
+DerivePointerAlignment: false
+
+# Other
+KeepEmptyLinesAtTheStartOfBlocks: false
+MaxEmptyLinesToKeep: 1
+SortIncludes: true
+SortUsingDeclarations: true
