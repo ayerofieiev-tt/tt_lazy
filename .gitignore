@@ -44,6 +44,7 @@ __pycache__/
 *.egg-info/
 dist/
 .eggs/
+.claude/
 
 # Pre-commit
 .pre-commit-config.yaml.lock

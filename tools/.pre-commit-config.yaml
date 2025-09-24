@@ -15,7 +15,7 @@ repos:
     hooks:
       - id: clang-tidy
         name: clang-tidy
-        entry: ./run-clang-tidy.sh
+        entry: ./tools/run-clang-tidy.sh
         language: system
         types_or: [c++, c]
         args: ['--build-dir', 'build/Debug', '--jobs', '4']

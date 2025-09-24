@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Script to run clang-tidy on the entire codebase
-# Usage: ./run-clang-tidy.sh [options]
+# Usage: ./tools/run-clang-tidy.sh [options]
 # Options:
 #   --fix    Apply fixes automatically
 #   --build-dir <dir>  Specify build directory (default: build)

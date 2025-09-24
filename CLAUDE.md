@@ -28,10 +28,10 @@ cmake --list-presets
 ### Code Quality Tools
 ```bash
 # Run static analysis
-./run-clang-tidy.sh
+./tools/run-clang-tidy.sh
 
 # Apply automatic fixes
-./run-clang-tidy.sh --fix
+./tools/run-clang-tidy.sh --fix
 
 # Pre-commit hooks (if installed)
 pre-commit run --all-files

@@ -19,16 +19,16 @@ fi
 
 # Install development dependencies
 echo "Installing development dependencies..."
-pip3 install -r requirements-dev.txt
+pip3 install -r tools/requirements-dev.txt
 
 # Install pre-commit hooks
 echo "Installing pre-commit hooks..."
-pre-commit install
+pre-commit install --config tools/.pre-commit-config.yaml
 
 # Run pre-commit on all files to check current state (optional)
 echo "Running pre-commit checks on all files..."
 echo "Note: This may take a moment and might show formatting changes needed."
-pre-commit run --all-files || true
+pre-commit run --all-files --config tools/.pre-commit-config.yaml || true
 
 echo ""
 echo "✅ Pre-commit hooks have been installed successfully!"
