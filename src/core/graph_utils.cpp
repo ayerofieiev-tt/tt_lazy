@@ -3,6 +3,7 @@
 #include <queue>
 #include <sstream>
 #include <fstream>
+#include <spdlog/spdlog.h>
 
 namespace tt_lazy {
 
@@ -46,6 +47,10 @@ std::vector<Tensor> GraphUtils::get_descendants(const Tensor& root) {
 }
 
 std::vector<Tensor> GraphUtils::topological_sort(const Tensor& root) {
+    if (auto logger = spdlog::get("tt_lazy")) {
+        logger->debug("Starting topological sort on graph with root: {}", root.op_name());
+    }
+    
     std::unordered_set<uintptr_t> visited;
     std::unordered_set<uintptr_t> temp_visited;
     std::vector<Tensor> result;
@@ -78,10 +83,20 @@ std::vector<Tensor> GraphUtils::topological_sort(const Tensor& root) {
 }
 
 bool GraphUtils::has_cycles(const Tensor& root) {
+    if (auto logger = spdlog::get("tt_lazy")) {
+        logger->debug("Checking for cycles in graph with root: {}", root.op_name());
+    }
+    
     try {
         topological_sort(root);
+        if (auto logger = spdlog::get("tt_lazy")) {
+            logger->debug("No cycles detected in graph");
+        }
         return false;
-    } catch (const std::runtime_error&) {
+    } catch (const std::runtime_error& e) {
+        if (auto logger = spdlog::get("tt_lazy")) {
+            logger->warn("Cycle detected in graph: {}", e.what());
+        }
         return true;
     }
 }

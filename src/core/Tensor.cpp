@@ -18,6 +18,7 @@ Tensor::Tensor()
 Tensor::Tensor(const Shape& shape, DataType dtype, std::shared_ptr<OpArgs> args, std::vector<Tensor> inputs, uint16_t output_index)
     : spec_(std::make_shared<TensorSpec>(shape, dtype, args, output_index)) {
     spec_->inputs = std::move(inputs);
+
 }
 
 Tensor::Tensor(const Shape& shape, std::vector<float>&& data)
