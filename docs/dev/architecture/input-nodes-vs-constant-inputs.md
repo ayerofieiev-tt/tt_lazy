@@ -5,7 +5,7 @@ This document explains the critical distinction between `input_nodes` and `const
 ## Quick Summary
 
 - **`input_nodes`**: References to lazy tensors that need to be computed by other operations
-- **`constant_inputs`**: Pre-materialized tensor data that's ready for immediate use
+- **`constant_inputs`**: Pre-evaluated tensor data that's ready for immediate use
 
 ## The Core Distinction
 
@@ -28,7 +28,7 @@ std::vector<NodeId> input_nodes;  // Dependencies (lazy tensors)
 std::vector<Tensor> constant_inputs; // Constant input tensors
 ```
 
-**Purpose**: Store tensors that are already materialized and ready for computation.
+**Purpose**: Store tensors that are already evaluated and ready for computation.
 
 **Contains**: Complete `Tensor` objects with actual data.
 
@@ -84,10 +84,10 @@ std::vector<NodeId> Tape::get_dependencies(NodeId node_id) const {
 ```cpp
 // From Tensor.hpp
 class Tensor {
-    enum class State { LAZY, MATERIALIZED };
+    enum class State { LAZY, SCHEDULED, EVALUATED };
     bool is_lazy() const { return state_ == State::LAZY; }
     bool is_constant() const { return is_constant_; }
-    bool is_materialized() const { return state_ == State::MATERIALIZED; }
+    bool is_evaluated() const { return state_ == State::EVALUATED; }
 };
 ```
 
@@ -111,9 +111,9 @@ for (const auto& input : node.inputs()) {
 float data[50];
 Tensor constant_tensor(data, {5, 10});  // is_constant() == true
 
-// Or materialized tensors that have been computed:
-Tensor materialized({2, 3});           // is_constant() == false, but is_materialized() == true
-materialized.fill(1.0f);
+// Or evaluated tensors that have been computed:
+Tensor evaluated({2, 3});           // is_constant() == false, but is_evaluated() == true
+evaluated.fill(1.0f);
 ```
 
 ## Practical Examples
@@ -121,7 +121,7 @@ materialized.fill(1.0f);
 ### Example 1: Pure Constants
 ```cpp
 // Create constant tensors
-Tensor a({2, 3});  // Materialized, not constant
+Tensor a({2, 3});  // Evaluated, not constant
 a.fill(1.0f);
 float b_data[] = {1, 2, 3, 4, 5, 6};
 Tensor b(b_data, {2, 3});  // Constant tensor
@@ -130,7 +130,7 @@ Tensor c = matmul(a, b);
 
 // TapeOperation for matmul:
 // - input_nodes: [] (empty - no lazy dependencies)
-// - constant_inputs: [a, b] (both tensors are pre-materialized)
+// - constant_inputs: [a, b] (both tensors are pre-evaluated)
 ```
 
 ### Example 2: Mixed Dependencies
@@ -139,7 +139,7 @@ Tensor x({2, 3});
 x.fill(1.0f);
 
 Tensor y = relu(x);        // Creates lazy tensor y
-Tensor z = matmul(y, x);   // y is lazy, x is materialized
+Tensor z = matmul(y, x);   // y is lazy, x is evaluated
 
 // TapeOperation for relu:
 // - input_nodes: []
@@ -147,7 +147,7 @@ Tensor z = matmul(y, x);   // y is lazy, x is materialized
 
 // TapeOperation for matmul:
 // - input_nodes: [y.producer_node()] (y depends on relu operation)
-// - constant_inputs: [x] (x is pre-materialized)
+// - constant_inputs: [x] (x is pre-evaluated)
 ```
 
 ### Example 3: Chain of Operations

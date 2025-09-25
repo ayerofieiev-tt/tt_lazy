@@ -44,6 +44,15 @@ cmake --build $BUILD_DIR
 echo "Running $TEST_DESCRIPTION..."
 ctest --test-dir $BUILD_DIR
 
+echo "Building and running graph visualization example..."
+cmake --build $BUILD_DIR --target graph_visualization_demo
+if [ -f "$BUILD_DIR/graph_visualization_demo" ]; then
+    echo "Running graph visualization demo..."
+    $BUILD_DIR/graph_visualization_demo
+else
+    echo "Warning: graph_visualization_demo executable not found"
+fi
+
 echo "$COMPLETION_MESSAGE"
 
 echo ""

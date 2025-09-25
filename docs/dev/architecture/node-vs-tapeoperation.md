@@ -20,7 +20,7 @@ In TT Lazy's lazy evaluation system, computation goes through two distinct phase
 class Node {
     NodeId id_;                          // Unique identifier
     OpTypeId type_id_;                   // Operation type (MatMul, ReLU, etc.)
-    SmallVector<Tensor, 4> inputs_;      // Input tensors (mix of lazy/materialized)
+    SmallVector<Tensor, 4> inputs_;      // Input tensors (mix of lazy/evaluated)
     SmallVector<NodeId, 2> output_nodes_; // Dependent nodes
     char args_storage_[256];             // Inline storage for operation arguments
 };

@@ -59,7 +59,7 @@ TT Lazy is a **CPU math functions backend** with a **lazy tensor evaluation fram
 ### C++ API - Automatic Evaluation
 
 ```cpp
-#include "Tensor.hpp"
+#include "tensor.hpp"
 #include "operations.hpp"
 
 // Create tensors
@@ -112,12 +112,13 @@ e = tt_lazy.reduce_sum(d)       # Still lazy
 result_np = e.to_numpy()        # Graph evaluated automatically!
 ```
 
-### Graph Visualization & Debugging
+### Debugging
 
 ```cpp
-// Print the computation graph structure
+// Print tensor information
 Tensor result = some_computation();
-result.print_graph(std::cout);
+std::cout << result << std::endl; // Stream output
+spdlog::info("{}", result.to_string()); // Or use to_string() directly
 
 // Manual evaluation when needed
 result.eval(); // Explicit evaluation (optional)

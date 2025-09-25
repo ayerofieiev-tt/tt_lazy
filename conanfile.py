@@ -32,7 +32,7 @@ class TtLazyConan(ConanFile):
     }
 
     # Sources are located in the same place as this recipe, copy them to the recipe
-    exports_sources = "CMakeLists.txt", "src/*", "tests/*"
+    exports_sources = "CMakeLists.txt", "src/*", "tests/*", "examples/*"
 
     def config_options(self):
         if self.settings.os == "Windows":

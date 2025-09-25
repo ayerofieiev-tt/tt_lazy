@@ -138,20 +138,19 @@ endif()
 
 # Core library - basic graph infrastructure
 set(CORE_SOURCES
-    src/core/Tensor.cpp
-    src/core/Node.cpp
-    src/core/Context.cpp
-    src/core/MemoryManager.cpp
+    src/core/tensor.cpp
+    src/core/shape.cpp
+    src/core/graph_utils.cpp
+    src/core/evaluation_manager.cpp
 )
 
 set(CORE_HEADERS
     src/core/common.hpp
-    src/core/Tensor.hpp
-    src/core/OpArgs.hpp
-    src/core/Node.hpp
-    src/core/Context.hpp
-    src/core/MemoryManager.hpp
-    src/core/EvaluationManager.hpp
+    src/core/tensor.hpp
+    src/core/op_args.hpp
+    src/core/evaluation_manager.hpp
+    src/core/shape.hpp
+    src/core/graph_utils.hpp
 )
 
 # Create core library
@@ -197,89 +196,17 @@ target_include_directories(tt_lazy_operations PUBLIC src/frontend)
 # Apply sanitizers to operations library
 add_sanitizer_flags(tt_lazy_operations)
 
-# Math library - immediate computation operations
-set(MATH_SOURCES
-    src/backend/cpu/split.cpp
-    src/backend/cpu/matmul.cpp
-    src/backend/cpu/reduce_sum.cpp
-    src/backend/cpu/eltwise.cpp
-    src/backend/cpu/transpose.cpp
-    src/backend/cpu/fused_ops.cpp
-)
+# Add example executable
+add_executable(graph_visualization_demo examples/graph_visualization_demo.cpp)
+target_link_libraries(graph_visualization_demo tt_lazy_operations)
+target_include_directories(graph_visualization_demo PRIVATE src)
 
-# Create math library
-add_library(tt_math_lib STATIC ${MATH_SOURCES})
-
-# Set math library properties
-set_target_properties(tt_math_lib PROPERTIES
-    CXX_STANDARD 17
-    CXX_STANDARD_REQUIRED ON
-)
-
-# Math library includes and dependencies
-target_include_directories(tt_math_lib PUBLIC
-    ${CMAKE_SOURCE_DIR}/src/backend/cpu
-)
-target_link_libraries(tt_math_lib PUBLIC tt_lazy_core)
-
-# Apply sanitizers to math library
-add_sanitizer_flags(tt_math_lib)
-
-# Add compiler-specific flags to math library
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    target_compile_options(tt_math_lib PRIVATE -Wall -Wextra -Wpedantic -Werror)
-endif()
-
-# Tape library - depends on core, operations, and math
-set(TAPE_SOURCES
-    src/tape/Tape.cpp
-    src/tape/TapeGenerator.cpp
-    src/tape/TapeExecutor.cpp
-    src/tape/TapeEvaluationManager.cpp
-    src/tape/OperationHandlers.cpp
-    src/tape/passes/TapeOptimizationPass.cpp
-    src/tape/passes/DeadCodeEliminationPass.cpp
-    src/tape/passes/MLPFusionPass.cpp
-)
-
-# Create tape library
-add_library(tt_lazy_tape STATIC ${TAPE_SOURCES})
-
-# Set tape library properties
-set_target_properties(tt_lazy_tape PROPERTIES
-    CXX_STANDARD 17
-    CXX_STANDARD_REQUIRED ON
-)
-
-# Tape library includes and dependencies
-target_include_directories(tt_lazy_tape PUBLIC
-    ${CMAKE_SOURCE_DIR}/src/tape
-    ${CMAKE_SOURCE_DIR}/src/core
-    ${CMAKE_SOURCE_DIR}/src/frontend
-    ${CMAKE_SOURCE_DIR}/src/backend/cpu
-)
-
-# Tape library depends on core, operations, and math libraries
-# Math library is PRIVATE as it's an implementation detail
-target_link_libraries(tt_lazy_tape
-    PUBLIC
-        tt_lazy_core
-        tt_lazy_operations
-    PRIVATE
-        tt_math_lib
-)
-
-# Apply sanitizers to tape library
-add_sanitizer_flags(tt_lazy_tape)
-
-# Add compiler-specific flags to tape library
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    target_compile_options(tt_lazy_tape PRIVATE -Wall -Wextra -Wpedantic -Werror)
-endif()
+# Apply sanitizers to executable
+add_sanitizer_flags(graph_visualization_demo)
 
 # Lazy target - combines core + operations + tape
 add_library(tt_lazy_lib INTERFACE)
-target_link_libraries(tt_lazy_lib INTERFACE tt_lazy_core tt_lazy_operations tt_lazy_tape)
+target_link_libraries(tt_lazy_lib INTERFACE tt_lazy_core tt_lazy_operations)
 
 # Add compiler-specific flags to libraries
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
@@ -292,70 +219,6 @@ find_package(GTest REQUIRED)
 find_package(Boost REQUIRED)
 find_package(pybind11 REQUIRED)
 find_package(spdlog REQUIRED)
-
-# Create test executable
-add_executable(tt_lazy_tests
-    tests/cpp/test_main.cpp
-    tests/cpp/unit/test_tensor.cpp
-    tests/cpp/unit/test_node.cpp
-    tests/cpp/unit/test_context.cpp
-    tests/cpp/unit/math/test_math_ops.cpp
-    tests/cpp/integration/test_operations.cpp
-    tests/cpp/integration/test_end_to_end.cpp
-    tests/cpp/benchmarks/test_mlp_demo.cpp
-)
-
-# Add include directories for test executable
-target_include_directories(tt_lazy_tests PRIVATE
-    ${CMAKE_SOURCE_DIR}/src/frontend
-    ${CMAKE_SOURCE_DIR}/src/backend/cpu
-    ${CMAKE_SOURCE_DIR}/src/core
-    ${CMAKE_SOURCE_DIR}/src/tape
-)
-
-# Link test executable with all libraries and gtest
-# Note: only link tt_lazy_tape as it transitively provides core and operations
-target_link_libraries(tt_lazy_tests
-    tt_lazy_tape
-    GTest::gtest_main
-)
-
-# Set test target properties
-set_target_properties(tt_lazy_tests PROPERTIES
-    CXX_STANDARD 17
-    CXX_STANDARD_REQUIRED ON
-)
-
-# Apply sanitizers to test executable
-add_sanitizer_flags(tt_lazy_tests)
-
-# Add compiler-specific flags to tests
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    target_compile_options(tt_lazy_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
-endif()
-
-# Enable testing
-enable_testing()
-
-# Add test to CTest
-add_test(NAME tt_lazy_tests COMMAND tt_lazy_tests)
-
-# Python module
-pybind11_add_module(tt_lazy_python
-    src/bindings/python_bindings.cpp
-    src/bindings/core_types.cpp
-    src/bindings/operations.cpp
-)
-# Only link tt_lazy_tape as it transitively provides core and operations
-target_link_libraries(tt_lazy_python PRIVATE tt_lazy_tape pybind11::module)
-
-# Apply sanitizers to Python module
-add_sanitizer_flags(tt_lazy_python)
-
-# Add compiler-specific flags to Python module
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    target_compile_options(tt_lazy_python PRIVATE -Wall -Wextra -Wpedantic -Werror)
-endif()
 
 # Print build information
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
@@ -376,11 +239,9 @@ message(STATUS "Static analysis:")
 message(STATUS "  Clang-Tidy: ${ENABLE_CLANG_TIDY}")
 
 # Optional: Add install targets
-install(TARGETS tt_lazy_core tt_lazy_operations tt_lazy_tape DESTINATION lib)
+install(TARGETS tt_lazy_core tt_lazy_operations DESTINATION lib)
 install(DIRECTORY src/core/ DESTINATION include/tt_lazy/core FILES_MATCHING PATTERN "*.hpp")
 install(DIRECTORY src/frontend/ DESTINATION include/tt_lazy/frontend FILES_MATCHING PATTERN "*.hpp")
-install(DIRECTORY src/tape/ DESTINATION include/tt_lazy/tape FILES_MATCHING PATTERN "*.hpp")
-install(DIRECTORY src/backend/cpu/ DESTINATION include/tt_lazy/backend/cpu FILES_MATCHING PATTERN "*.hpp")
 
 # Custom target to run clang-tidy manually on all source files
 if(CLANG_TIDY_EXE)
@@ -390,11 +251,6 @@ if(CLANG_TIDY_EXE)
         ${CMAKE_SOURCE_DIR}/src/core/*.hpp
         ${CMAKE_SOURCE_DIR}/src/frontend/*.cpp
         ${CMAKE_SOURCE_DIR}/src/frontend/*.hpp
-        ${CMAKE_SOURCE_DIR}/src/tape/*.cpp
-        ${CMAKE_SOURCE_DIR}/src/tape/*.hpp
-        ${CMAKE_SOURCE_DIR}/src/backend/cpu/*.cpp
-        ${CMAKE_SOURCE_DIR}/src/backend/cpu/*.hpp
-        ${CMAKE_SOURCE_DIR}/src/bindings/*.cpp
     )
 
     # Create custom target for running clang-tidy

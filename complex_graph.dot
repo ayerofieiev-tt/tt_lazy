@@ -1,0 +1,21 @@
+digraph ComputationGraph {
+  rankdir=TB;
+  node [shape=box, style=filled];
+  edge [color=gray];
+
+  node_4938820008 [label="Add\nShape: [2, 3]\nType: 0", fillcolor="lightgreen"];
+  node_4938819192 -> node_4938820008;
+  node_4938819192 [label="ReLU\nShape: [2, 3]\nType: 0", fillcolor="lightpink"];
+  node_4938818920 -> node_4938819192;
+  node_4938818920 [label="Multiply\nShape: [2, 3]\nType: 0", fillcolor="lightyellow"];
+  node_4938818648 -> node_4938818920;
+  node_4938818648 [label="Add\nShape: [2, 3]\nType: 0", fillcolor="lightgreen"];
+  node_4938816584 -> node_4938818648;
+  node_4938816584 [label="Constant\nShape: [2, 3]\nType: 0", fillcolor="lightblue"];
+  node_4938817560 -> node_4938818648;
+  node_4938817560 [label="Constant\nShape: [2, 3]\nType: 0", fillcolor="lightblue"];
+  node_4938817832 -> node_4938818920;
+  node_4938817832 [label="Constant\nShape: [2, 3]\nType: 0", fillcolor="lightblue"];
+  node_4938819736 -> node_4938820008;
+  node_4938819736 [label="Constant\nShape: [2, 3]\nType: 0", fillcolor="lightblue"];
+}

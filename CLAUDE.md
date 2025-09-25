@@ -28,10 +28,10 @@ cmake --list-presets
 ### Code Quality Tools
 ```bash
 # Run static analysis
-./tools/run-clang-tidy.sh
+./run-clang-tidy.sh
 
-# Apply automatic fixes
-./tools/run-clang-tidy.sh --fix
+# Apply automatic fixes and parallel execution
+./run-clang-tidy.sh --fix --jobs 8
 
 # Pre-commit hooks (if installed)
 pre-commit run --all-files
@@ -51,31 +51,31 @@ cd tests/python && python3 run_tests.py
 
 ## Architecture Overview
 
-TT Lazy is a **lazy evaluation C++ ML framework** with a 4-layer architecture:
+TT Lazy is a **lazy evaluation C++ ML framework** with a 4-layer architecture. The project has been recently restructured with a clean `src/` directory organization that mirrors the architectural layers:
 
-### 1. Frontend Layer (`operations/`, `includes/operations/`)
+### 1. Frontend Layer (`src/frontend/`)
 - **Purpose**: User-facing operations that build computation graphs
 - **Key**: Fast dispatch - operations only create graph nodes, no computation
 - **Example**: `matmul(a, b)`, `relu(x)`, `reduce_sum(y)` build nodes instantly
 
-### 2. Graph Layer (`src/`, `includes/`)
+### 2. Core Layer (`src/core/`)
 - **Purpose**: Core infrastructure storing operation graphs
 - **Key Components**:
   - `Tensor`: Unified lazy/materialized tensor class
-  - `Node`: Graph node with operation metadata
   - `Context`: Global graph state management
   - `MemoryManager`: Handles tensor data allocation
+  - `Shape`: Tensor shape utilities
 - **Key**: Lazy tensors store graph references until materialization
 
-### 3. Tape Layer (`tape/`, `includes/tape/`)
+### 3. Tape Layer (`src/tape/`)
 - **Purpose**: Converts graphs to linear execution plans with optimization
 - **Key Components**:
   - `TapeExecutor`: Executes operation sequence
   - `OperationHandlers`: Bridge between graph ops and math functions
-  - `MLPFusionPass`: Fuses matrix operations for performance
+  - `passes/MLPFusionPass`: Fuses matrix operations for performance
 - **Key**: Optimization passes run before execution
 
-### 4. Math Layer (`math/`)
+### 4. Backend Layer (`src/backend/cpu/`)
 - **Purpose**: CPU implementations of actual computations
 - **Key**: Functions require materialized tensors, perform immediate evaluation
 - **Pattern**: Each operation has corresponding `math::function_name()`
@@ -84,7 +84,7 @@ TT Lazy is a **lazy evaluation C++ ML framework** with a 4-layer architecture:
 
 ### Adding New Operations (3-Step Pattern)
 
-1. **Frontend** (`includes/operations/operations.hpp`, `operations/operations.cpp`):
+1. **Frontend** (`src/frontend/operations.hpp`, `src/frontend/operations.cpp`):
 ```cpp
 // Define arguments
 DEFINE_OP_ARGS(NewOp, bool param = false;);
@@ -98,7 +98,7 @@ Tensor new_op(const Tensor& input, bool param = false) {
 }
 ```
 
-2. **Math** (`math/math_operations.hpp`, `math/eltwise.cpp`):
+2. **Backend** (`src/backend/cpu/math_operations.hpp`, `src/backend/cpu/eltwise.cpp`):
 ```cpp
 namespace math {
     Tensor new_op(const Tensor& input) {
@@ -109,7 +109,7 @@ namespace math {
 }
 ```
 
-3. **Handler** (`tape/OperationHandlers.cpp`):
+3. **Handler** (`src/tape/OperationHandlers.cpp`):
 ```cpp
 void handle_new_op(TapeOperation& op, TapeExecutor& executor) {
     // Bridge: collect inputs, call math function, store result
@@ -151,13 +151,19 @@ executor.register_operation(NewOpArgs::type_id(), handle_new_op);
 - **Development builds**: Enable ASAN+UBSAN sanitizers and clang-tidy by default
 - **Release builds**: Optimized with all safety checks disabled
 - **Ninja**: Default generator for fast parallel builds
-- **Conan**: Handles all dependencies (Boost, GTest, pybind11)
+- **Conan**: Handles all dependencies (Boost, GTest, pybind11, spdlog)
+- **Logging**: Uses spdlog for structured logging and debugging
 
 ### Testing Strategy
-- C++ unit tests per component (`test_tensor.cpp`, `test_operations.cpp`)
-- End-to-end integration tests (`test_end_to_end.cpp`)
-- Python binding tests for API compatibility
-- MLP demo test for complex graph scenarios
+- **Unit tests**: Component-focused tests in `tests/cpp/unit/`
+  - `unit/test_tensor.cpp`: Core tensor functionality
+  - `unit/math/test_math_ops.cpp`: Backend math operations
+- **Integration tests**: Cross-component tests in `tests/cpp/integration/`
+  - `integration/test_operations.cpp`: Frontend operation chains
+  - `integration/test_end_to_end.cpp`: Full pipeline testing
+- **Benchmarks**: Performance tests in `tests/cpp/benchmarks/`
+  - `benchmarks/test_mlp_demo.cpp`: MLP fusion and optimization
+- **Python tests**: API compatibility tests in `tests/python/`
 
 ## Important Implementation Notes
 
