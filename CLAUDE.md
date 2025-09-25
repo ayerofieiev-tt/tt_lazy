@@ -45,93 +45,83 @@ ctest --preset dev --output-on-failure
 # Run specific test
 ./build-dev/tt_lazy_tests --gtest_filter="*TestName*"
 
+# Run graph visualization demo
+./build.sh dev  # Automatically builds and runs the demo
+
+# Manual demo execution
+./build-dev/graph_visualization_demo
+
 # Python tests
 cd tests/python && python3 run_tests.py
 ```
 
 ## Architecture Overview
 
-TT Lazy is a **lazy evaluation C++ ML framework** with a 4-layer architecture. The project has been recently restructured with a clean `src/` directory organization that mirrors the architectural layers:
+TT Lazy is a **lazy evaluation C++ ML framework** that has been simplified to a clean 2-layer architecture:
 
 ### 1. Frontend Layer (`src/frontend/`)
 - **Purpose**: User-facing operations that build computation graphs
-- **Key**: Fast dispatch - operations only create graph nodes, no computation
+- **Key**: Fast dispatch - operations build graph nodes without computation
+- **Files**: `operations.hpp`, `operations.cpp`
 - **Example**: `matmul(a, b)`, `relu(x)`, `reduce_sum(y)` build nodes instantly
 
 ### 2. Core Layer (`src/core/`)
-- **Purpose**: Core infrastructure storing operation graphs
+- **Purpose**: Core infrastructure for tensor management and evaluation
 - **Key Components**:
-  - `Tensor`: Unified lazy/materialized tensor class
-  - `Context`: Global graph state management
-  - `MemoryManager`: Handles tensor data allocation
-  - `Shape`: Tensor shape utilities
-- **Key**: Lazy tensors store graph references until materialization
+  - `tensor.hpp`: Unified lazy/materialized tensor class with graph visualization
+  - `shape.hpp`: Tensor shape utilities and operations
+  - `graph_utils.hpp`: Graph manipulation and traversal utilities
+  - `evaluation_manager.hpp`: Handles tensor materialization and computation
+  - `op_args.hpp`: Type-safe operation argument system
+- **Key**: Lazy tensors store graph references until materialization triggers evaluation
 
-### 3. Tape Layer (`src/tape/`)
-- **Purpose**: Converts graphs to linear execution plans with optimization
-- **Key Components**:
-  - `TapeExecutor`: Executes operation sequence
-  - `OperationHandlers`: Bridge between graph ops and math functions
-  - `passes/MLPFusionPass`: Fuses matrix operations for performance
-- **Key**: Optimization passes run before execution
-
-### 4. Backend Layer (`src/backend/cpu/`)
-- **Purpose**: CPU implementations of actual computations
-- **Key**: Functions require materialized tensors, perform immediate evaluation
-- **Pattern**: Each operation has corresponding `math::function_name()`
+### Examples and Demos
+- `examples/graph_visualization_demo.cpp`: Demonstrates tensor graph construction and visualization
+- **Auto-built**: The demo is automatically built and run during development builds
 
 ## Key Development Patterns
 
-### Adding New Operations (3-Step Pattern)
+### Adding New Operations (Simplified Pattern)
 
-1. **Frontend** (`src/frontend/operations.hpp`, `src/frontend/operations.cpp`):
+1. **Define Operation Arguments** (`src/core/op_args.hpp`):
 ```cpp
-// Define arguments
-DEFINE_OP_ARGS(NewOp, bool param = false;);
+DEFINE_OP_ARGS(NewOp,
+    bool param = false;
+);
+```
 
-// Implement graph builder
-Tensor new_op(const Tensor& input, bool param = false) {
+2. **Implement Frontend Operation** (`src/frontend/operations.hpp`, `src/frontend/operations.cpp`):
+```cpp
+// Declare in operations.hpp
+Tensor new_op(const Tensor& input, bool param = false);
+
+// Implement in operations.cpp
+Tensor new_op(const Tensor& input, bool param) {
     NewOpArgs args{param};
-    SmallVector<Tensor, 2> inputs{input};
-    NodeId node_id = Context::instance().create_node(inputs, std::move(args));
-    return Tensor(node_id, 0, input.shape());
+    // Create operation node in computation graph
+    // Implementation details handled by evaluation manager
+    return create_operation_tensor<NewOpArgs>(args, {input});
 }
 ```
 
-2. **Backend** (`src/backend/cpu/math_operations.hpp`, `src/backend/cpu/eltwise.cpp`):
+3. **Handle Evaluation** (`src/core/evaluation_manager.cpp`):
 ```cpp
-namespace math {
-    Tensor new_op(const Tensor& input) {
-        // Requires materialized tensor, performs computation
-        if (!input.is_materialized()) throw std::runtime_error("...");
-        // ... actual computation
-    }
-}
+// Add evaluation logic for new operation type
+// The evaluation manager handles materialization and computation
 ```
 
-3. **Handler** (`src/tape/OperationHandlers.cpp`):
-```cpp
-void handle_new_op(TapeOperation& op, TapeExecutor& executor) {
-    // Bridge: collect inputs, call math function, store result
-    auto result = std::make_shared<Tensor>(math::new_op(*input_tensors[0]));
-    executor.set_result(op.node_id, result);
-}
-
-// Register in register_all_operations()
-executor.register_operation(NewOpArgs::type_id(), handle_new_op);
-```
-
-### Tensor Lifecycle
-1. **Creation**: `Tensor c = matmul(a, b)` creates lazy tensor (just graph node)
-2. **Graph Building**: Operations chain without computation
-3. **Materialization**: Triggered by `data_ptr()`, `to_vector()`, `to_numpy()`
-4. **Execution**: Tape system optimizes and runs math functions
-5. **Result**: Materialized tensor with actual data
+### Tensor Lifecycle (Simplified)
+1. **Creation**: `Tensor c = matmul(a, b)` creates lazy tensor with graph reference
+2. **Graph Building**: Operations chain without computation, building graph structure
+3. **Materialization**: Triggered by data access (`data_ptr()`, `to_vector()`, `to_string()`)
+4. **Evaluation**: EvaluationManager handles computation and caching
+5. **Result**: Materialized tensor with actual data and preserved graph info
 
 ### Memory Management
-- **Lazy tensors**: Store `NodeId` + metadata, no data allocation
-- **Materialized tensors**: Own data via `MemoryManager`
-- **Evaluation**: Automatic on data access, manual with `eval()`
+- **Lazy tensors**: Store graph references and shape metadata
+- **Materialized tensors**: Contain actual computed data
+- **Graph visualization**: Available for both lazy and materialized tensors
+- **Evaluation**: Automatic on data access, explicit with `eval()`
 
 ## Code Conventions
 
@@ -142,10 +132,10 @@ executor.register_operation(NewOpArgs::type_id(), handle_new_op);
 - Constants: `UPPER_CASE`
 
 ### Libraries Structure
-- `tt_lazy_core`: Basic infrastructure (Tensor, Node, Context, MemoryManager)
+- `tt_lazy_core`: Basic infrastructure (tensor, shape, graph utilities, evaluation)
 - `tt_lazy_operations`: Frontend operations building graphs
-- `tt_math_lib`: CPU math functions for computation
-- `tt_lazy_tape`: Tape execution with optimization passes
+- `tt_lazy_lib`: Combined interface library (core + operations)
+- Note: Tape and math layers removed in recent simplification
 
 ### Build Configuration
 - **Development builds**: Enable ASAN+UBSAN sanitizers and clang-tidy by default
@@ -156,14 +146,14 @@ executor.register_operation(NewOpArgs::type_id(), handle_new_op);
 
 ### Testing Strategy
 - **Unit tests**: Component-focused tests in `tests/cpp/unit/`
-  - `unit/test_tensor.cpp`: Core tensor functionality
-  - `unit/math/test_math_ops.cpp`: Backend math operations
+  - `unit/test_tensor.cpp`: Core tensor functionality and graph visualization
 - **Integration tests**: Cross-component tests in `tests/cpp/integration/`
   - `integration/test_operations.cpp`: Frontend operation chains
   - `integration/test_end_to_end.cpp`: Full pipeline testing
 - **Benchmarks**: Performance tests in `tests/cpp/benchmarks/`
-  - `benchmarks/test_mlp_demo.cpp`: MLP fusion and optimization
-- **Python tests**: API compatibility tests in `tests/python/`
+  - `benchmarks/test_mlp_demo.cpp`: Complex graph scenarios
+- **Examples**: Interactive demos in `examples/`
+  - `graph_visualization_demo.cpp`: Live graph construction demonstration
 
 ## Important Implementation Notes
 
@@ -176,13 +166,18 @@ DEFINE_OP_ARGS(MatMul,
 );
 ```
 
+### Graph Visualization and Debugging
+- **Graph visualization**: Use `tensor.to_string()` or `std::cout << tensor` for graph inspection
+- **Spdlog integration**: Use `spdlog::info("{}", tensor.to_string())` for structured logging
+- **Demo integration**: `graph_visualization_demo` shows live graph construction
+
 ### Error Handling
-- Math functions must check `input.is_materialized()`
 - Use exceptions for error conditions with descriptive messages
-- Validate tensor shapes and arguments in operation handlers
+- Validate tensor shapes and arguments in evaluation manager
+- Check materialization status when accessing data
 
 ### Performance Considerations
 - Frontend operations must be fast (graph building only)
-- Math functions are the performance bottlenecks
-- Tape optimization passes can fuse operations (see `MLPFusionPass`)
-- Materialization triggers can impact performance patterns
+- EvaluationManager handles computation optimization and caching
+- Graph visualization is available without performance penalty
+- Materialization triggers computation - use strategically
